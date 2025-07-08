@@ -1,0 +1,15 @@
+# Dependencies
+node_modules
+
+# Cache
+.cache
+__pycache__
+
+# Env
+.env*
+
+# Build
+build
+
+# Misc
+.DS_Store

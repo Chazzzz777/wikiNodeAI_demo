@@ -1,0 +1,77 @@
+.wiki-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  background-color: var(--feishu-bg-color-1);
+  border-bottom: 1px solid var(--feishu-border-color-1);
+}
+
+.wiki-title {
+  font-family: 'Arial', sans-serif; /* 举例，可以选择更具设计感的字体 */
+  font-size: 28px;
+  font-weight: bold;
+  color: transparent;
+  background: linear-gradient(45deg, #6a11cb, #2575fc);
+  -webkit-background-clip: text;
+  background-clip: text;
+  margin: 0;
+}
+
+.api-key-section {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.api-key-group .ant-input-password {
+  border-radius: var(--feishu-radius-m) 0 0 var(--feishu-radius-m);
+}
+
+.api-key-group .ant-btn {
+  border-radius: 0 var(--feishu-radius-m) var(--feishu-radius-m) 0;
+}
+
+.wiki-content {
+  padding: 24px;
+}
+
+.scrollable-container {
+  height: calc(100vh - 160px); /* 根据实际布局调整 */
+  overflow: auto;
+  padding: 0 12px;
+}
+
+.wiki-list .ant-list-item {
+  padding: 0 !important; /* 移除内边距 */
+  border: none !important; /* 移除边框 */
+  background-color: transparent !important; /* 移除背景色 */
+  margin-bottom: 16px;
+}
+
+.wiki-list .ant-list-item:hover {
+  box-shadow: none !important; /* 移除悬浮阴影 */
+  transform: none !important; /* 移除悬浮效果 */
+}
+
+.wiki-list .ant-card {
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+
+.wiki-list .ant-card:hover {
+  box-shadow: var(--feishu-shadow-2);
+  transform: translateY(-2px);
+}
+
+.wiki-list .ant-list-item-meta-title a {
+  color: var(--feishu-text-color-1);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.wiki-list .ant-list-item-meta-title a:hover {
+  color: var(--feishu-color-primary);
+}
+
+.wiki-list .ant-list-item-meta-description {
+  color: var(--feishu-text-color-3);
+}

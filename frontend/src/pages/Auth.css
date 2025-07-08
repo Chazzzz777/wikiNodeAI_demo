@@ -1,0 +1,28 @@
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 48px); /* 减去 app-container 的 padding */
+  text-align: center;
+}
+
+.auth-card {
+  background-color: var(--feishu-bg-color-1);
+  padding: 48px;
+  border-radius: var(--feishu-radius-l);
+  box-shadow: var(--feishu-shadow-2);
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-title {
+  color: var(--feishu-text-color-1);
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.auth-tip {
+  color: var(--feishu-text-color-3);
+  margin-top: 16px;
+}
