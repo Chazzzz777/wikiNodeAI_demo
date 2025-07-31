@@ -1,508 +1,147 @@
 import os
+import uuid
 import requests
-import json
 import logging
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify, Response, stream_with_context, redirect, url_for
 from flask_cors import CORS
 from dotenv import load_dotenv
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import json
+from urllib.parse import urlencode
+from functools import wraps
+from aily_service import AilyService
 
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-load_dotenv() # Load environment variables from .env file
+# 加载 .env 文件中的环境变量
+load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000", "supports_credentials": True}})
+CORS(app)  # 允许所有来源的跨域请求
 
-# --- Logging Configuration ---
-if __name__ == '__main__':
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.INFO)
-    app.logger.addHandler(handler)
-    app.logger.setLevel(logging.INFO)
+# 设置日志
+logging.basicConfig(filename='app.log', level=logging.INFO, 
+                    format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
-# 请替换为你的 App ID 和 App Secret
-APP_ID = "cli_a8e91e9639bd1013"
-APP_SECRET = "OmjLOJ40ISFTQyEE47wjzKiSdGsUVf6d"
+# 从环境变量中获取配置
+APP_ID = os.getenv("APP_ID")
+APP_SECRET = os.getenv("APP_SECRET")
+AILY_APP_ID = os.getenv("AILY_APP_ID")
+SKILL_ID = os.getenv("SKILL_ID")
 
-# --- Global Request Logger ---
+# 实例化 AilyService
+aily_service = AilyService(APP_ID, APP_SECRET, AILY_APP_ID, SKILL_ID)
 
-@app.before_request
-def log_request_info():
-    app.logger.info('--- Incoming Request ---')
-    app.logger.info(f'Method: {request.method}')
-    app.logger.info(f'Path: {request.path}')
-    app.logger.info(f'Headers: {request.headers}')
+# 存储用户会话和 token
+user_sessions = {}
 
-# --- Helper Functions ---
+@app.route('/api/auth/login', methods=['GET'])
+def login():
+    """
+    引导用户到飞书进行 OAuth 授权。
+    """
+    redirect_uri = url_for('callback', _external=True, _scheme='http')
+    # 确保在生产环境中使用 https
+    if not app.debug:
+        redirect_uri = redirect_uri.replace('http://', 'https://')
 
-def get_user_access_token(code, redirect_uri):
-    url = "https://open.feishu.cn/open-apis/authen/v2/oauth/token"
-    payload = {
-        "grant_type": "authorization_code",
-        "code": code,
-        "client_id": APP_ID,
-        "client_secret": APP_SECRET,
-        "redirect_uri": redirect_uri
-    }
-    headers = {
-        "Content-Type": "application/json"
-    }
+    auth_url = f"https://open.feishu.cn/open-apis/authen/v1/index?app_id={APP_ID}&redirect_uri={redirect_uri}"
+    return redirect(auth_url)
 
-    app.logger.info("="*20 + " Feishu user_access_token Request " + "="*20)
-    app.logger.info(f"POST {url}")
-    app.logger.info("HEADERS: " + json.dumps(headers, indent=2))
-    app.logger.info("BODY: " + json.dumps(payload, indent=2))
-    app.logger.info("="*60)
-
-    response = requests.post(url, json=payload, headers=headers)
-
-    app.logger.info("--- Received response from Feishu ---")
-    app.logger.info(f"Status Code: {response.status_code}")
-    app.logger.info(f"Response Content: {response.text}")
-        
-    response.raise_for_status()
-    data = response.json()
-    if data.get("code", -1) != 0:
-        app.logger.error(f"Failed to get user_access_token from feishu, response: {data}")
-        return None
-    return data.get("access_token")
-
-
-# --- API Routes ---
-
-@app.route('/api/auth/callback')
-def auth_callback():
+@app.route('/api/auth/callback', methods=['GET'])
+def callback():
+    """
+    处理飞书 OAuth 回调，获取用户信息和访问令牌。
+    """
     code = request.args.get('code')
-    # 重定向回前端，并带上 code
-    return f'<script>window.location.href = "http://localhost:3000/?code={code}";</script>'
+    if not code:
+        return jsonify({"error": "Authorization code not found"}), 400
 
-@app.route('/api/auth/token', methods=['POST'])
-def get_token():
-    app.logger.info("--- Received /api/auth/token request ---")
-    data = request.get_json()
-    app.logger.info(f"Request data: {data}")
-    code = data.get('code')
-    redirect_uri = data.get('redirect_uri')
-    app.logger.info(f"Extracted code: {code}")
-    app.logger.info(f"Extracted redirect_uri: {redirect_uri}")
-
-    if not code or not redirect_uri:
-        app.logger.error("Error: Code and redirect_uri are required")
-        response = jsonify({"error": "Code and redirect_uri are required"})
-        response.status_code = 400
-    else:
-        try:
-            user_access_token = get_user_access_token(code, redirect_uri)
-            if not user_access_token:
-                app.logger.error("Failed to get user_access_token")
-                response = jsonify({"error": "Failed to get user_access_token"})
-                response.status_code = 500
-            else:
-                response = jsonify({"user_access_token": user_access_token})
-        except requests.exceptions.RequestException as e:
-            app.logger.error(f"Request error: {str(e)}")
-            if e.response:
-                app.logger.error(f"Response status: {e.response.status_code}")
-                app.logger.error(f"Response content: {e.response.text}")
-            try:
-                error_data = e.response.json()
-                response = jsonify({"error": error_data})
-                response.status_code = e.response.status_code
-            except (ValueError, AttributeError):
-                response = jsonify({"error": str(e)})
-                response.status_code = 500
-    
-    return response
-
-@app.route('/api/wiki/spaces', methods=['GET'])
-def get_wiki_spaces():
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({"error": "Unauthorized"}), 401
-    user_access_token = auth_header.split(' ')[1]
-
-    page_token = request.args.get('page_token')
-    page_size = request.args.get('page_size', 20)
-
-    url = "https://open.feishu.cn/open-apis/wiki/v2/spaces"
-    headers = {"Authorization": f"Bearer {user_access_token}"}
-    params = {
-        "page_size": page_size
-    }
-    if page_token:
-        params['page_token'] = page_token
-
+    # 获取 app_access_token
     try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        return jsonify(response.json().get("data", {}))
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Request error: {str(e)}")
-        if e.response is not None:
-            app.logger.error(f"Response status: {e.response.status_code}")
-            app.logger.error(f"Response content: {e.response.text}")
-            try:
-                error_data = e.response.json()
-                return jsonify({"error": error_data}), e.response.status_code
-            except ValueError:
-                return jsonify({"error": e.response.text}), e.response.status_code
-        return jsonify({"error": str(e)}), 500
-
-
-# --- Node Fetching Logic ---
-
-# 速率限制器
-class RateLimiter:
-    def __init__(self, max_calls, per_seconds):
-        self.max_calls = max_calls
-        self.per_seconds = per_seconds
-        self.calls = []
-
-    def __call__(self, f):
-        def wrapped(*args, **kwargs):
-            now = time.time()
-            # 移除一分钟前的调用记录
-            self.calls = [c for c in self.calls if c > now - self.per_seconds]
-            if len(self.calls) >= self.max_calls:
-                # 计算需要等待的时间
-                sleep_time = (self.calls[0] + self.per_seconds) - now
-                if sleep_time > 0:
-                    app.logger.warning(f"Rate limit reached. Sleeping for {sleep_time:.2f} seconds.")
-                    time.sleep(sleep_time)
-            self.calls.append(time.time())
-            return f(*args, **kwargs)
-        return wrapped
-
-rate_limiter = RateLimiter(max_calls=90, per_seconds=60)
-
-def fetch_node_children(space_id, node_token, user_access_token, page_token=None):
-    url = f"https://open.feishu.cn/open-apis/wiki/v2/spaces/{space_id}/nodes"
-    headers = {"Authorization": f"Bearer {user_access_token}"}
-    params = {"page_size": 50}
-    if node_token:
-        params['parent_node_token'] = node_token
-    if page_token:
-        params['page_token'] = page_token
-
-    @rate_limiter
-    def fetch_with_rate_limit():
-        return requests.get(url, headers=headers, params=params)
-
-    response = fetch_with_rate_limit()
-    response.raise_for_status()
-    return response.json().get("data", {})
-
-
-
-def fetch_all_nodes_recursively(space_id, user_access_token, parent_node_token=None):
-    nodes = []
-    page_token = None
-    while True:
-        url = f"https://open.feishu.cn/open-apis/wiki/v2/spaces/{space_id}/nodes"
-        headers = {"Authorization": f"Bearer {user_access_token}"}
-        params = {"page_size": 50}
-        if parent_node_token:
-            params['parent_node_token'] = parent_node_token
-        if page_token:
-            params['page_token'] = page_token
-
-        @RateLimiter(max_calls=90, per_seconds=60)
-        def fetch_with_rate_limit():
-            return requests.get(url, headers=headers, params=params)
-
-        response = fetch_with_rate_limit()
-        response.raise_for_status()
-        data = response.json().get("data", {})
-        items = data.get("items", [])
-        nodes.extend(items)
-
-        with ThreadPoolExecutor() as executor:
-            future_to_node = {executor.submit(fetch_all_nodes_recursively, space_id, user_access_token, item['node_token']): item for item in items if item.get('has_child')}
-            for future in as_completed(future_to_node):
-                node = future_to_node[future]
-                try:
-                    children = future.result()
-                    # Find the node in the list and add its children
-                    for n in nodes:
-                        if n['node_token'] == node['node_token']:
-                            n['children'] = children
-                            break
-                except Exception as exc:
-                    app.logger.error(f'{node["node_token"]} generated an exception: {exc}')
-
-        if not data.get('has_more'):
-            break
-        page_token = data.get('page_token')
-    return nodes
-
-@app.route('/api/wiki/<space_id>/nodes/all', methods=['GET'])
-def get_all_wiki_nodes(space_id):
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({"error": "Unauthorized"}), 401
-    user_access_token = auth_header.split(' ')[1]
-
-    try:
-        all_nodes = fetch_all_nodes_recursively(space_id, user_access_token)
-        return jsonify(all_nodes)
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Request error: {str(e)}")
-        if e.response is not None:
-            app.logger.error(f"Response status: {e.response.status_code}")
-            app.logger.error(f"Response content: {e.response.text}")
-            try:
-                error_data = e.response.json()
-                return jsonify({"error": error_data}), e.response.status_code
-            except ValueError:
-                return jsonify({"error": e.response.text}), e.response.status_code
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/wiki/<space_id>/nodes', methods=['GET'])
-def get_wiki_nodes(space_id):
-    auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '):
-        return jsonify({"error": "Unauthorized"}), 401
-    user_access_token = auth_header.split(' ')[1]
-
-    fetch_all = request.args.get('fetch_all', 'false').lower() == 'true'
-
-    try:
-        if fetch_all:
-            nodes = fetch_all_nodes_recursively(space_id, user_access_token)
-            return jsonify({"items": nodes})
-        else:
-            parent_node_token = request.args.get('parent_node_token')
-            page_token = request.args.get('page_token')
-            data = fetch_node_children(space_id, parent_node_token, user_access_token, page_token)
-            return jsonify(data)
-
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Request error: {str(e)}")
-        if e.response is not None:
-            app.logger.error(f"Response status: {e.response.status_code}")
-            app.logger.error(f"Response content: {e.response.text}")
-            try:
-                error_data = e.response.json()
-                return jsonify({"error": error_data}), e.response.status_code
-            except ValueError:
-                return jsonify({"error": e.response.text}), e.response.status_code
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/wiki/doc/<obj_token>', methods=['GET'])
-def get_wiki_document(obj_token):
-    user_access_token = request.headers.get('user-access-token')
-    if not user_access_token:
-        return jsonify({"error": "User Access Token is required"}), 401
-
-    url = f"https://open.feishu.cn/open-apis/docx/v1/documents/{obj_token}/raw_content"
-    headers = {
-        "Authorization": f"Bearer {user_access_token}"
-    }
-
-    try:
-        response = requests.get(url, headers=headers)
-        response.raise_for_status()
-        data = response.json()
-        if data.get("code") == 0:
-            return jsonify(data.get("data", {}))
-        else:
-            return jsonify({"error": data.get("msg", "Failed to fetch document")}), 500
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Request error: {str(e)}")
-        if e.response is not None:
-            try:
-                error_data = e.response.json()
-                return jsonify({"error": error_data}), e.response.status_code
-            except ValueError:
-                return jsonify({"error": e.response.text}), e.response.status_code
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/chat/stream', methods=['POST'])
-def chat_stream():
-    data = request.json
-    api_key = data.get('api_key')
-    model = data.get('model')
-    messages = data.get('messages')
-
-    if not all([api_key, model, messages]):
-        return jsonify({"error": "Missing required parameters"}), 400
-
-    def generate():
-        url = "https://volc.aipa.bytedance.net/api/chat/stream"
+        token_url = "https://open.feishu.cn/open-apis/authen/v1/access_token"
+        headers = {"Content-Type": "application/json"}
         payload = {
-            "api_key": api_key,
-            "model": model,
-            "messages": messages,
-            "parameters": {
-                "stream": True
-            }
+            "app_id": APP_ID,
+            "app_secret": APP_SECRET,
+            "grant_type": "authorization_code",
+            "code": code
         }
-        headers = {
-            'Content-Type': 'application/json',
-            'Accept': 'text/event-stream'
+        response = requests.post(token_url, headers=headers, json=payload)
+        response.raise_for_status()
+        token_data = response.json().get('data', {})
+        
+        user_access_token = token_data.get('access_token')
+        if not user_access_token:
+            return jsonify({"error": "Failed to get user access token"}), 500
+
+        # 使用 user_access_token 获取用户信息
+        user_info_url = "https://open.feishu.cn/open-apis/authen/v1/user_info"
+        user_headers = {"Authorization": f"Bearer {user_access_token}"}
+        user_response = requests.get(user_info_url, headers=user_headers)
+        user_response.raise_for_status()
+        user_info = user_response.json().get('data', {})
+        user_id = user_info.get('user_id')
+
+        if not user_id:
+            return jsonify({"error": "Failed to get user_id"}), 500
+
+        # 存储会话信息
+        session_id = str(uuid.uuid4())
+        user_sessions[user_access_token] = {
+            "user_id": user_id,
+            "session_id": session_id
         }
 
+        # 重定向到前端，并携带 token
+        # 在生产环境中，应重定向到更安全的页面
+        frontend_url = f"http://localhost:80/auth?token={user_access_token}"
+        return redirect(frontend_url)
+
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"Error during Feishu API call: {e}")
+        return jsonify({"error": "Failed to communicate with Feishu API", "details": str(e)}), 502
+    except Exception as e:
+        app.logger.error(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An internal server error occurred", "details": str(e)}), 500
+
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(" ")[1]
+        if not token:
+            return jsonify({'message': 'Token is missing!'}), 401
+        if token not in user_sessions:
+            return jsonify({'message': 'Token is invalid or expired!'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route('/api/aily/run', methods=['POST'])
+@token_required
+def run_aily_skill():
+    """
+    接收前端请求，调用 Aily Service 的 run_skill_stream 方法。
+    """
+    data = request.get_json()
+    prompt = data.get('prompt')
+    token = request.headers['Authorization'].split(" ")[1]
+    
+    if not prompt:
+        return jsonify({"error": "Prompt is required"}), 400
+
+    user_id = user_sessions[token]['user_id']
+    session_id = user_sessions[token]['session_id']
+
+    # 使用 stream_with_context 和生成器函数来处理流式响应
+    def generate():
         try:
-            with requests.post(url, json=payload, headers=headers, stream=True) as r:
-                r.raise_for_status()
-                for chunk in r.iter_content(chunk_size=None):
-                    if chunk:
-                        yield chunk
-        except requests.exceptions.RequestException as e:
-            app.logger.error(f"LLM request error: {e}")
-            yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+            for chunk in aily_service.run_skill_stream(session_id, user_id, prompt):
+                yield chunk
+        except Exception as e:
+            app.logger.error(f"Error streaming from Aily service: {e}")
+            # 如果流中断，可以考虑返回一个错误事件
+            error_event = {"error": "Stream failed"}
+            yield f"data: {json.dumps(error_event)}\n\n"
 
-    return Response(generate(), content_type='text/event-stream')
-
-
-@app.route('/api/llm/stream_analysis', methods=['POST'])
-def stream_analysis():
-    data = request.json
-    api_key = data.get('api_key')
-    model = data.get('model', 'doubao-1.5-pro-32k-250115')
-    messages = data.get('messages')
-
-    if not api_key or not messages:
-        return jsonify({"error": "Missing api_key or messages"}), 400
-
-    payload = {
-        'api_key': api_key,
-        'model': model,
-        'messages': messages
-    }
-
-    parameters = {}
-    temperature = data.get('temperature')
-    max_tokens = data.get('max_tokens')
-
-    if temperature is not None:
-        parameters['temperature'] = temperature
-    if max_tokens is not None:
-        parameters['max_tokens'] = max_tokens
-
-    if parameters:
-        payload['parameters'] = parameters
-
-    headers = {
-        'Content-Type': 'application/json'
-    }
-
-    try:
-        response = requests.post(
-            'https://volc.aipa.bytedance.net/api/chat/stream',
-            data=json.dumps(payload),
-            headers=headers,
-            stream=True
-        )
-        response.raise_for_status()
-
-        def generate():
-            for chunk in response.iter_content(chunk_size=None):
-                if chunk:
-                    yield chunk
-        
-        return Response(generate(), content_type='text/event-stream')
-
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"LLM Request error: {str(e)}")
-        if e.response is not None:
-            app.logger.error(f"LLM Response status: {e.response.status_code}")
-            app.logger.error(f"LLM Response content: {e.response.text}")
-            try:
-                error_data = e.response.json()
-                return jsonify({"error": error_data}), e.response.status_code
-            except ValueError:
-                return jsonify({"error": e.response.text}), e.response.status_code
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/llm/doc_import_analysis', methods=['POST'])
-def doc_import_analysis():
-    data = request.json
-    doc_token = data.get('doc_token')
-    wiki_node_md = data.get('wiki_node_md')
-    api_key = data.get('api_key')
-    user_access_token = request.headers.get('user-access-token')
-
-    if not all([doc_token, wiki_node_md, api_key, user_access_token]):
-        return jsonify({"error": "Missing required parameters"}), 400
-
-    # 1. Get document content from Feishu
-    doc_content = ''
-    try:
-        doc_url = f"https://open.feishu.cn/open-apis/docx/v1/documents/{doc_token}/raw_content"
-        headers = {"Authorization": f"Bearer {user_access_token}"}
-        response = requests.get(doc_url, headers=headers)
-        response.raise_for_status()
-        doc_data = response.json()
-        if doc_data.get("code") == 0:
-            doc_content = doc_data.get("data", {}).get('content', '')
-        else:
-            return jsonify({"error": doc_data.get("msg", "Failed to fetch document content")}), 500
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"Failed to fetch document content: {e}")
-        return jsonify({"error": str(e)}), 500
-
-    # 2. Construct prompt and call LLM
-    prompt = f"""你是一位知识管理专家，负责评估一篇外部文档是否适合导入当前的知识库中。请根据文档内容和知识库的现有结构，进行全面评估，并以Markdown格式输出结果。
-
-## 评估材料
-
-### 待导入文档内容：
-{doc_content}
-
-### 当前知识库结构：
-{wiki_node_md}
-
-## 评估任务
-
-1.  **内容匹配度分析**：
-    -   分析文档主题是否与知识库的整体定位相符。
-    -   评估文档内容在知识库中是否已有类似或重复的内容。
-
-2.  **归属节点建议**：
-    -   如果文档适合导入，请建议一个最合适的存放节点（请从“当前知识库结构”中选择一个最相关的节点token）。
-    -   并详细说明为什么建议放在该节点下。
-
-3.  **导入决策**：
-    -   明确给出“建议导入”或“不建议导入”的结论。
-
-请严格按照以上结构进行分析和输出。
-"""
-
-    payload = {
-        'api_key': api_key,
-        'model': 'doubao-seed-1-6-thinking-250615',
-        'messages': [{'role': 'user', 'content': prompt}]
-    }
-
-    headers = {
-        'Content-Type': 'application/json'
-    }
-
-    try:
-        response = requests.post(
-            'https://volc.aipa.bytedance.net/api/chat/stream',
-            data=json.dumps(payload),
-            headers=headers,
-            stream=True
-        )
-        response.raise_for_status()
-
-        def generate():
-            for chunk in response.iter_content(chunk_size=None):
-                if chunk:
-                    yield chunk
-        
-        return Response(generate(), content_type='text/event-stream')
-
-    except requests.exceptions.RequestException as e:
-        app.logger.error(f"LLM Request error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+    return Response(stream_with_context(generate()), content_type='text/event-stream')
 
 if __name__ == '__main__':
-    load_dotenv()
-    port = int(os.getenv('FLASK_RUN_PORT', 5001))
-    app.run(port=port, debug=False, use_reloader=False)
+    app.run(host='0.0.0.0', port=8000, debug=True)
