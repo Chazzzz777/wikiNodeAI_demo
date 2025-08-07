@@ -1,167 +1,125 @@
-# wikiNodeAI_demo
+# AI知识库管理助手
 
-这是一个基于飞书多维表格和AI技术的智能文档分析系统，旨在帮助团队更高效地管理和分析文档内容。
+这是一个基于飞书知识库API的AI知识库管理助手，包含前端和后端两个部分。
 
-## 功能特性
+该应用可以帮助用户分析文档内容，判断是否适合导入知识库，并提供导入建议。
 
-- **飞书多维表格集成**：无缝连接飞书多维表格，实现数据的实时同步和管理。
-- **AI文档分析**：利用AI技术对文档内容进行深度分析，提取关键信息和洞察。
-- **智能问答**：基于文档内容提供智能问答功能，快速解答用户疑问。
-- **文档导入**：支持多种格式的文档导入，方便快捷地将现有文档整合到系统中。
-- **可视化展示**：通过图表和报告的形式直观展示文档分析结果。
+## 项目结构
 
-## 技术架构
-
-项目采用前后端分离的架构设计：
-
-- **前端**：使用React框架构建用户界面，提供流畅的交互体验。
-- **后端**：基于Python Flask框架开发，提供RESTful API接口。
-- **AI服务**：集成OpenAI API，实现文档分析和智能问答功能。
-- **数据存储**：利用飞书多维表格作为主要数据存储和管理平台。
-
-## 目录结构
-
-```
-wikiNodeAI_demo/
-├── backend/          # 后端代码
-│   ├── app.py        # Flask应用主文件
-│   ├── requirements.txt # Python依赖包列表
-│   └── logs/         # 日志文件目录
-├── frontend/         # 前端代码
-│   ├── public/       # 静态资源
-│   ├── src/          # 源代码
-│   │   ├── components/ # React组件
-│   │   ├── pages/     # 页面组件
-│   │   └── utils/     # 工具函数
-│   ├── package.json  # npm依赖配置
-│   └── package-lock.json # npm依赖锁定文件
-└── start.sh          # 项目启动脚本
-```
+- `frontend/` - React前端应用
+- `backend/` - Python Flask后端服务
+- `start.sh` - 一键启动脚本
 
 ## 环境变量配置
 
-项目使用环境变量来管理配置信息，需要在`backend`和`frontend`目录下分别创建`.env`文件。
+### 前端环境变量配置
 
-### 后端环境变量 (backend/.env)
+在项目根目录复制 `.env.example` 文件为 `.env`，并配置以下环境变量：
 
 ```env
-# OpenAI API密钥
-OPENAI_API_KEY=your_openai_api_key_here
+REACT_APP_FEISHU_APP_ID=your_feishu_app_id
+REACT_APP_ENABLE_BACKEND_LOGGING=true # 可选，用于启用后端日志
+```
 
-# 飞书应用凭证
+### 后端环境变量配置
+
+在项目根目录创建 `.env` 文件，配置以下环境变量：
+
+```env
 FEISHU_APP_ID=your_feishu_app_id
 FEISHU_APP_SECRET=your_feishu_app_secret
-
-# Flask配置
-FLASK_APP=app.py
-FLASK_ENV=development
-
-# 服务器配置
-HOST=localhost
-PORT=5001
-
-# 日志配置
-LOG_LEVEL=INFO
-LOG_FILE=logs/backend.log
 ```
 
-### 前端环境变量 (frontend/.env)
+## 安装依赖
 
-```env
-# 飞书应用凭证
-REACT_APP_FEISHU_APP_ID=your_feishu_app_id
-REACT_APP_FEISHU_APP_SECRET=your_feishu_app_secret
+### 后端依赖
 
-# 后端API配置
-REACT_APP_BACKEND_URL=http://localhost:5001
-
-# 日志配置
-REACT_APP_ENABLE_BACKEND_LOGGING=false
+```bash
+cd backend
+pip install -r requirements.txt
 ```
 
-## 快速开始
+### 前端依赖
 
-1. 克隆项目代码：
-   ```bash
-   git clone https://github.com/Chazzzz777/wikiNodeAI_demo.git
-   cd wikiNodeAI_demo
-   ```
+```bash
+cd frontend
+npm install
+```
 
-2. 安装后端依赖：
+## 启动项目
+
+### 方法一：使用一键启动脚本（推荐）
+
+```bash
+./start.sh
+```
+
+该脚本会自动清理端口3000和5001上的进程，然后同时启动前端和后端服务。
+
+### 方法二：分别启动
+
+1. 启动后端服务：
    ```bash
    cd backend
-   pip install -r requirements.txt
-   ```
-
-3. 安装前端依赖：
-   ```bash
-   cd ../frontend
-   npm install
-   ```
-
-4. 配置环境变量：
-   在`backend`和`frontend`目录下分别创建`.env`文件，并填入相应的配置信息。
-
-5. 启动后端服务：
-   ```bash
-   cd ../backend
    python app.py
    ```
 
-6. 启动前端服务：
+2. 启动前端开发服务器：
    ```bash
-   cd ../frontend
+   cd frontend
    npm start
    ```
 
-7. 访问应用：
-   打开浏览器访问`http://localhost:3000`。
+## 端口信息
 
-## 开发指南
+- 前端开发服务器运行在 `http://localhost:3000`
+- 后端服务运行在 `http://localhost:5001`
 
-### 后端开发
+## 测试应用
 
-后端使用Python Flask框架开发，主要文件为`app.py`。开发时需要注意：
+### 手动测试
 
-- 所有API接口都应有详细的日志记录，便于调试和问题排查。
-- 与飞书多维表格的交互应通过官方SDK进行，确保数据安全和稳定性。
-- AI分析功能应考虑性能优化，避免长时间等待。
+1. 在浏览器中打开 http://localhost:3000
+2. 使用界面与应用交互
+3. 或者，您可以直接使用curl测试API：
 
-### 前端开发
+```bash
+curl -X POST http://localhost:5001/api/llm/doc_import_analysis \
+  -H "Content-Type: application/json" \
+  -d '{
+    "api_key": "your-api-key",
+    "model": "your-model-id",
+    "doc_content": "Your document content here",
+    "wiki_node_md": "# Knowledge Base\n- Node 1\n- Node 2"
+  }'
+```
 
-前端使用React框架开发，采用函数组件和Hooks。开发时需要注意：
+## API 端点
 
-- 组件设计应遵循单一职责原则，提高代码复用性。
-- 状态管理应合理使用React的useState和useEffect。
-- 与后端的API交互应统一处理错误和加载状态。
+### 文档导入分析
 
-## 部署说明
+- **端点**: `POST /api/llm/doc_import_analysis`
+- **描述**: 分析文档以确定是否应将其导入知识库
+- **参数**:
+  - `api_key` (string, required): 用于认证的API密钥
+  - `model` (string, required): 用于分析的模型ID
+  - `doc_content` (string, required): 要分析的文档内容
+  - `wiki_node_md` (string, required): 以markdown格式表示的当前知识库结构
 
-项目可以通过Docker容器化部署，也可以直接部署在服务器上。
+## 故障排除
 
-### Docker部署
+1. 如果应用启动失败，请检查端口3000和5001是否空闲
+2. 确保所有依赖都已正确安装
+3. 检查终端输出中的任何错误信息
 
-1. 构建Docker镜像：
-   ```bash
-   docker build -t wikinodeai_demo .
-   ```
+## 清理端口进程
 
-2. 运行容器：
-   ```bash
-   docker run -d -p 3000:3000 -p 5001:5001 wikinodeai_demo
-   ```
+如果遇到端口占用问题，可以手动清理相关端口的进程：
 
-### 服务器部署
+```bash
+# 清理前端端口
+kill -9 $(lsof -t -i:3000) 2>/dev/null || echo "端口3000上没有找到进程"
 
-1. 确保服务器已安装Python和Node.js环境。
-2. 克隆项目代码并安装依赖。
-3. 配置环境变量。
-4. 使用进程管理工具（如PM2）启动应用。
-
-## 贡献指南
-
-欢迎提交Issue和Pull Request来改进项目。
-
-## 许可证
-
-本项目采用MIT许可证。
+# 清理后端端口
+kill -9 $(lsof -t -i:5001) 2>/dev/null || echo "端口5001上没有找到进程"
+```
