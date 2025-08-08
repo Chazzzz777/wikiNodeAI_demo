@@ -15,7 +15,7 @@ const Auth = () => {
     const token = localStorage.getItem('user_access_token');
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const REDIRECT_URI = 'http://localhost:3000';
+    const REDIRECT_URI = `http://localhost:${process.env.REACT_APP_FRONTEND_PORT || 3000}`
 
     if (token) {
       navigate('/wiki');
@@ -45,8 +45,8 @@ const Auth = () => {
           setLoading(false);
         });
     } else {
-      const APP_ID = 'cli_a8e91e9639bd1013';
-      const scope = 'docx:document:readonly wiki:node:move wiki:node:retrieve wiki:space:read wiki:space:retrieve';
+      const APP_ID = process.env.REACT_APP_FEISHU_APP_ID;
+      const scope = 'docx:document:readonly wiki:node:move wiki:node:retrieve wiki:space:read wiki:space:retrieve wiki:node:read';
       const encodedRedirectUri = encodeURIComponent(REDIRECT_URI);
       window.location.href = `https://open.feishu.cn/open-apis/authen/v1/index?redirect_uri=${encodedRedirectUri}&app_id=${APP_ID}&scope=${scope}`;
     }

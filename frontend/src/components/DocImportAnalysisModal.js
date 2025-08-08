@@ -20,13 +20,39 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
       message.error('请输入文档链接');
       return;
     }
-    const match = docUrl.match(/docx\/([a-zA-Z0-9]+)/);
-    if (!match || !match[1]) {
+    
+    // 支持多种链接类型：docx、doc、wiki
+    let docToken = null;
+    let docType = null;
+    
+    // 检查 docx 类型
+    const docxMatch = docUrl.match(/docx\/([a-zA-Z0-9]+)/);
+    if (docxMatch && docxMatch[1]) {
+      docToken = docxMatch[1];
+      docType = 'docx';
+    }
+    
+    // 检查 doc 类型
+    const docMatch = docUrl.match(/doc\/([a-zA-Z0-9]+)/);
+    if (!docToken && docMatch && docMatch[1]) {
+      docToken = docMatch[1];
+      docType = 'doc';
+    }
+    
+    // 检查 wiki 类型
+    const wikiMatch = docUrl.match(/wiki\/([a-zA-Z0-9]+)/);
+    if (!docToken && wikiMatch && wikiMatch[1]) {
+      docToken = wikiMatch[1];
+      docType = 'wiki';
+    }
+    
+    if (!docToken || !docType) {
       message.error('无法从链接中提取有效的文档 token，请检查链接格式');
       return;
     }
-    const docToken = match[1];
-    onAnalysis(docToken);
+    
+    // 传递 token 和类型给后端
+    onAnalysis(docToken, docType);
   };
 
   const renderContent = () => {
@@ -78,7 +104,7 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
     >
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
         <Input
-          placeholder="请输入飞书文档链接，例如：https://xxx.feishu.cn/docx/xxxxxxxxxxxxxxx"
+          placeholder="请输入飞书文档链接，支持 docx、doc、wiki 类型，例如：https://xxx.feishu.cn/docx/xxxxxxxxxxxxxxx 或 https://xxx.feishu.cn/wiki/xxxxxxxxxxxxxxx"
           value={docUrl}
           onChange={(e) => setDocUrl(e.target.value)}
           style={{ flex: 1, marginRight: '10px' }}

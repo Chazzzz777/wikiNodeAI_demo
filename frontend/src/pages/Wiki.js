@@ -1,28 +1,25 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/api';
-import { List, Spin, Typography, Button, message, Input, Card } from 'antd';
+import { List, Spin, Typography, Button, message, Input, Card, Space } from 'antd';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import './Wiki.css';
 
 const { Title } = Typography;
 
 function Wiki() {
+  const navigate = useNavigate();
   const [spaces, setSpaces] = useState([]);
 
   const [hasMore, setHasMore] = useState(true);
   const [pageToken, setPageToken] = useState(null);
-  const [apiKey, setApiKey] = useState(localStorage.getItem('llm_api_key') || '');
-  const [apiKeyInputVisible, setApiKeyInputVisible] = useState(false);
+  const loading = useRef(false);
 
-  const handleSaveApiKey = () => {
-    localStorage.setItem('llm_api_key', apiKey);
-    message.success('API Key 已保存');
-    setApiKeyInputVisible(false);
-  };
+
 
   const loadMoreData = useCallback(() => {
-    if (!hasMore) return;
+    if (loading.current || !hasMore) return;
+    loading.current = true;
 
     const params = { page_size: 20 };
     if (pageToken) {
@@ -40,7 +37,9 @@ function Wiki() {
         console.error('Error fetching wiki spaces:', error);
         message.error('加载知识空间失败，请稍后重试。');
       })
-      .finally(() => {});
+      .finally(() => {
+        loading.current = false;
+      });
   }, [pageToken, hasMore]);
 
   useEffect(() => {
@@ -54,19 +53,9 @@ function Wiki() {
       <header className="wiki-header">
         <Title level={3} className="wiki-title">AI 知识官</Title>
         <div className="api-key-section">
-          {apiKeyInputVisible ? (
-            <Input.Group compact>
-              <Input.Password 
-                style={{ width: '300px' }} 
-                placeholder="输入你的大模型 API Key"
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-              />
-              <Button type="primary" onClick={handleSaveApiKey}>保存</Button>
-            </Input.Group>
-          ) : (
-            <Button onClick={() => setApiKeyInputVisible(true)}>设置 API Key</Button>
-          )}
+          <Space>
+            <Button onClick={() => navigate('/config')}>AI 分析配置</Button>
+          </Space>
         </div>
       </header>
       <main className="wiki-content">

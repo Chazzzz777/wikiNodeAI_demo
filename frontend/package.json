@@ -20,7 +20,7 @@
   },
   "scripts": {
     "prestart": "kill -9 $(lsof -t -i:3000) || true",
-    "start": "react-scripts start",
+    "start": "PORT=${REACT_APP_FRONTEND_PORT:-3000} react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
