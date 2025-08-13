@@ -1220,21 +1220,23 @@ ${batchResults.map((result, index) => {
           summaryConfig,
           (data) => {
             if (data.text) {
-              // 为最终总结添加根节点信息标题（只在第一次添加时显示）
-              let updatedFinalSummary = prev.finalSummary;
-              if (!prev.finalSummary) {
-                const allRootTitles = batchData.map(batch => 
-                  batch.rootNodes.map(node => node.title).join('、')
-                ).join('；');
-                updatedFinalSummary = `## 最终总结（涵盖所有根节点：${allRootTitles}）\n\n`;
+                // 为最终总结添加根节点信息标题（只在第一次添加时显示）
+                setStateFunction(prev => {
+                  let updatedFinalSummary = prev.finalSummary;
+                  if (!prev.finalSummary) {
+                    const allRootTitles = batchData.map(batch => 
+                      batch.rootNodes.map(node => node.title).join('、')
+                    ).join('；');
+                    updatedFinalSummary = `## 最终总结（涵盖所有根节点：${allRootTitles}）\n\n`;
+                  }
+                  
+                  return {
+                    ...prev,
+                    finalSummary: updatedFinalSummary + data.text
+                  };
+                });
+                return;
               }
-              
-              setStateFunction(prev => ({
-                ...prev,
-                finalSummary: updatedFinalSummary + data.text
-              }));
-              return;
-            }
             
             if (data.type === 'reasoning') {
               setStateFunction(prev => ({
@@ -1247,20 +1249,22 @@ ${batchResults.map((result, index) => {
             if (data.type === 'content') {
               let content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content);
               
-              // 为最终总结添加根节点信息标题（只在第一次添加时显示）
-              let updatedFinalSummary = prev.finalSummary;
-              if (!prev.finalSummary) {
-                const allRootTitles = batchData.map(batch => 
-                  batch.rootNodes.map(node => node.title).join('、')
-                ).join('；');
-                updatedFinalSummary = `## 最终总结（涵盖所有根节点：${allRootTitles}）\n\n`;
-              }
-              
-              setStateFunction(prev => ({
-                ...prev,
-                finalSummary: updatedFinalSummary + content,
-                isReasoningDone: true
-              }));
+              setStateFunction(prev => {
+                // 为最终总结添加根节点信息标题（只在第一次添加时显示）
+                let updatedFinalSummary = prev.finalSummary;
+                if (!prev.finalSummary) {
+                  const allRootTitles = batchData.map(batch => 
+                    batch.rootNodes.map(node => node.title).join('、')
+                  ).join('；');
+                  updatedFinalSummary = `## 最终总结（涵盖所有根节点：${allRootTitles}）\n\n`;
+                }
+                
+                return {
+                  ...prev,
+                  finalSummary: updatedFinalSummary + content,
+                  isReasoningDone: true
+                };
+              });
               return;
             }
           },
