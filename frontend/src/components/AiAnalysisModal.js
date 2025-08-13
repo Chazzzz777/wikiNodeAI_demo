@@ -9,7 +9,7 @@ const { Text } = Typography;
 
 
 
-const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, isReasoningDone, loading, suggestions, onAnalysis, onRestartAnalysis, isFetchingFullNavigation, fullNavigationNodeCount }) => {
+const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, isReasoningDone, loading, suggestions, onAnalysis, onRestartAnalysis, isFetchingFullNavigation, fullNavigationNodeCount, isBatchProcessing, batchProgress, batchResults, currentBatchIndex, finalSummary }) => {
   const [showReasoning, setShowReasoning] = useState(false);
   const reasoningRef = useRef(null);
 
@@ -47,6 +47,43 @@ const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, i
       );
     }
     
+    // 如果正在分批处理，显示分批处理进度
+    if (isBatchProcessing) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: '20px' }}>
+            <Text>正在分批分析超大型知识库</Text>
+            {batchProgress > 0 && (
+              <div style={{ marginTop: '10px' }}>
+                <Text type="secondary">处理进度: {batchProgress}%</Text>
+              </div>
+            )}
+            {currentBatchIndex > 0 && (
+              <div style={{ marginTop: '10px' }}>
+                <Text type="secondary">当前批次: {currentBatchIndex}</Text>
+              </div>
+            )}
+          </div>
+          {batchResults && batchResults.length > 0 && (
+            <div style={{ marginTop: '20px', textAlign: 'left' }}>
+              <Text strong>已完成批次分析结果:</Text>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '10px' }}>
+                {batchResults.map((result, index) => (
+                  <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #d9d9d9', borderRadius: '4px' }}>
+                    <Text strong>批次 {index + 1}:</Text>
+                    <div style={{ marginTop: '5px' }}>
+                      <ReactMarkdown>{result}</ReactMarkdown>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
     if (loading && !analysisResult && !reasoningContent) {
       return <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
     }
@@ -72,6 +109,12 @@ const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, i
             </Panel>
           </Collapse>
         )}
+        {finalSummary && (
+          <div className="analysis-result" style={{ marginBottom: '20px' }}>
+            <Text strong style={{ marginBottom: '10px', display: 'block' }}>最终总结分析:</Text>
+            <ReactMarkdown>{finalSummary}</ReactMarkdown>
+          </div>
+        )}
         {analysisResult && (
           <div className="analysis-result">
             <ReactMarkdown>{analysisResult}</ReactMarkdown>
@@ -85,10 +128,10 @@ const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, i
   };
 
   // 判断是否显示开始分析按钮
-  const shouldShowStartButton = !loading && !isFetchingFullNavigation && !analysisResult && !reasoningContent;
+  const shouldShowStartButton = !loading && !isFetchingFullNavigation && !isBatchProcessing && !analysisResult && !reasoningContent;
   
   // 判断是否显示重新分析按钮
-  const shouldShowRestartButton = !loading && (analysisResult || reasoningContent) && onRestartAnalysis;
+  const shouldShowRestartButton = !loading && !isBatchProcessing && (analysisResult || reasoningContent || finalSummary) && onRestartAnalysis;
   
   // 渲染模态窗底部按钮
   const renderFooter = () => {
