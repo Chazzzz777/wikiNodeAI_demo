@@ -5,7 +5,7 @@ import './docanalysismodal.css';
 
 const { Panel } = Collapse;
 
-const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysisResult, reasoningContent, isReasoningDone, isFetchingFullNavigation, fullNavigationNodeCount }) => {
+const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysisResult, reasoningContent, isReasoningDone, isFetchingFullNavigation, fullNavigationNodeCount, isBatchProcessing, batchProgress, batchResults, currentBatchIndex, finalSummary }) => {
   const [docUrl, setDocUrl] = useState('');
   const reasoningRef = useRef(null);
 
@@ -73,6 +73,43 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
       );
     }
     
+    // 如果正在分批处理，显示分批处理进度
+    if (isBatchProcessing) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: '20px' }}>
+            <div>正在分批分析超大型知识库</div>
+            {batchProgress > 0 && (
+              <div style={{ marginTop: '10px', color: '#666' }}>
+                处理进度: {batchProgress}%
+              </div>
+            )}
+            {currentBatchIndex > 0 && (
+              <div style={{ marginTop: '10px', color: '#666' }}>
+                当前批次: {currentBatchIndex}
+              </div>
+            )}
+          </div>
+          {batchResults && batchResults.length > 0 && (
+            <div style={{ marginTop: '20px', textAlign: 'left' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>已完成批次分析结果:</div>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '10px' }}>
+                {batchResults.map((result, index) => (
+                  <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #d9d9d9', borderRadius: '4px' }}>
+                    <div style={{ fontWeight: 'bold' }}>批次 {index + 1}:</div>
+                    <div style={{ marginTop: '5px' }}>
+                      <ReactMarkdown>{result}</ReactMarkdown>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    
     if (loading && !analysisResult && !reasoningContent) {
       return <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
     }
@@ -97,6 +134,12 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
               </div>
             </Panel>
           </Collapse>
+        )}
+        {finalSummary && (
+          <div className="analysis-result" style={{ marginBottom: '20px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>最终总结分析:</div>
+            <ReactMarkdown>{finalSummary}</ReactMarkdown>
+          </div>
         )}
         {analysisResult && (
           <div className="analysis-result">
@@ -128,11 +171,11 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
         />
         <Button 
           className="gradient-purple-btn"
-          loading={loading || isFetchingFullNavigation} 
+          loading={loading || isFetchingFullNavigation || isBatchProcessing} 
           onClick={handleOk}
-          disabled={isFetchingFullNavigation}
+          disabled={isFetchingFullNavigation || isBatchProcessing}
         >
-          {isFetchingFullNavigation ? '获取全量导航中...' : '开始评估'}
+          {isFetchingFullNavigation ? '获取全量导航中...' : isBatchProcessing ? '分批处理中...' : '开始评估'}
         </Button>
       </div>
       {renderContent()}

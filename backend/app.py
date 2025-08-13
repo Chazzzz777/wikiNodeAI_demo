@@ -1156,6 +1156,7 @@ def doc_import_analysis():
     wiki_node_md = data.get('wiki_node_md')
     api_key = data.get('api_key')
     model = data.get('model', 'doubao-seed-1-6-250615')  # 从请求参数获取模型名称，使用新的默认值
+    max_tokens = data.get('max_tokens')  # 获取最大输出令牌数
     prompt_template = data.get('prompt_template')  # 从请求参数获取提示词模板
     wiki_title = data.get('wiki_title')  # 从请求参数获取知识库标题
     placeholders = data.get('placeholders', {})  # 获取占位符字典
@@ -1315,10 +1316,16 @@ def doc_import_analysis():
                 api_key=api_key
             )
             
+            # 处理额外参数
+            extra_params = {}
+            if max_tokens is not None:
+                extra_params['max_tokens'] = max_tokens
+            
             call_params = {
                 "model": model,
                 "messages": [{'role': 'user', 'content': prompt}],
                 "stream": True,
+                **extra_params  # 展开额外参数
             }
             app.logger.info(f"Calling LLM with params: {call_params}")
             
