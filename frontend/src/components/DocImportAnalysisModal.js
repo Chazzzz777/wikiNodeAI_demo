@@ -5,7 +5,7 @@ import './docanalysismodal.css';
 
 const { Panel } = Collapse;
 
-const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysisResult, reasoningContent, isReasoningDone }) => {
+const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysisResult, reasoningContent, isReasoningDone, isFetchingFullNavigation, fullNavigationNodeCount }) => {
   const [docUrl, setDocUrl] = useState('');
   const reasoningRef = useRef(null);
 
@@ -56,6 +56,23 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
   };
 
   const renderContent = () => {
+    // 如果正在获取全量导航数据，显示相应的提示信息
+    if (isFetchingFullNavigation) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: '20px' }}>
+            <div>正在获取全量导航数据</div>
+            {fullNavigationNodeCount > 0 && (
+              <div style={{ marginTop: '10px', color: '#666' }}>
+                已获取节点数量: {fullNavigationNodeCount}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
     if (loading && !analysisResult && !reasoningContent) {
       return <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
     }
@@ -109,8 +126,13 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
           onChange={(e) => setDocUrl(e.target.value)}
           style={{ flex: 1, marginRight: '10px' }}
         />
-        <Button type="primary" loading={loading} onClick={handleOk}>
-          开始评估
+        <Button 
+          className="gradient-purple-btn"
+          loading={loading || isFetchingFullNavigation} 
+          onClick={handleOk}
+          disabled={isFetchingFullNavigation}
+        >
+          {isFetchingFullNavigation ? '获取全量导航中...' : '开始评估'}
         </Button>
       </div>
       {renderContent()}

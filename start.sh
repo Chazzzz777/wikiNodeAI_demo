@@ -1,12 +1,17 @@
 #!/bin/bash
 
-# Load environment variables from .env file
-if [ -f .env ]; then
-  export $(cat .env | sed 's/#.*//g' | xargs)
+# Load environment variables from backend .env file
+if [ -f backend/.env ]; then
+  export $(cat backend/.env | sed 's/#.*//g' | xargs)
+fi
+
+# Load environment variables from frontend .env file
+if [ -f frontend/.env ]; then
+  export $(cat frontend/.env | sed 's/#.*//g' | xargs)
 fi
 
 # Use environment variables or default values
-FRONTEND_PORT=${FRONTEND_PORT:-3000}
+FRONTEND_PORT=${REACT_APP_FRONTEND_PORT:-3000}
 BACKEND_PORT=${BACKEND_PORT:-5001}
 
 # 清理前端和后端可能占用的端口

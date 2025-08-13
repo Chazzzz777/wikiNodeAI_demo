@@ -15,7 +15,7 @@ const DEFAULT_PROMPTS = {
 {WIKI_TITLE}
 
 **知识库节点信息**：
-{All_node}
+{KNOWLEDGE_BASE_STRUCTURE}
 
 ## 评估标准（总分30分）
 请对以下三个标准分别评分（1-10分），并提供详细分析：
@@ -91,7 +91,7 @@ const DEFAULT_PROMPTS = {
 {IMPORTED_DOCUMENT_CONTENT}
 
 ### 当前知识库结构：
-{CURRENT_WIKI_STRUCTURE}
+{KNOWLEDGE_BASE_STRUCTURE}
 
 ## 评估任务
 
@@ -192,7 +192,7 @@ function Config() {
             <Text type="secondary" style={{ display: 'block', marginBottom: '10px' }}>
               <strong>知识库分析提示词占位符说明：</strong><br />
               - <code>&#123;WIKI_TITLE&#125;</code>：当前知识库的标题<br />
-              - <code>&#123;All_node&#125;</code>：知识库的完整节点结构信息
+              - <code>&#123;KNOWLEDGE_BASE_STRUCTURE&#125;</code>：知识库的完整节点结构信息
             </Text>
             <Form.Item
               label="知识库分析提示词"
@@ -220,7 +220,7 @@ function Config() {
               <strong>文档导入分析提示词占位符说明：</strong><br />
               - <code>&#123;WIKI_TITLE&#125;</code>：当前知识库的标题<br />
               - <code>&#123;IMPORTED_DOCUMENT_CONTENT&#125;</code>：待导入文档的内容<br />
-              - <code>&#123;CURRENT_WIKI_STRUCTURE&#125;</code>：当前知识库的完整节点结构信息
+              - <code>&#123;KNOWLEDGE_BASE_STRUCTURE&#125;</code>：当前知识库的结构
             </Text>
             <Form.Item
               label="文档导入分析提示词"

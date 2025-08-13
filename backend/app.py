@@ -16,7 +16,7 @@ from openai import OpenAI
 load_dotenv() # Load environment variables from .env file
 
 # --- Environment Variables ---
-FRONTEND_PORT = os.getenv('REACT_APP_FRONTEND_PORT', 3000)
+FRONTEND_PORT = os.getenv('REACT_APP_FRONTEND_PORT', 3001)
 BACKEND_PORT = os.getenv('BACKEND_PORT', 5001)
 FEISHU_APP_ID = os.getenv('FEISHU_APP_ID')
 FEISHU_APP_SECRET = os.getenv('FEISHU_APP_SECRET')
@@ -411,19 +411,39 @@ class RateLimiter:
         self.max_calls = max_calls
         self.per_seconds = per_seconds
         self.calls = []
+        # 添加安全系数，实际限制比理论值更严格
+        self.safety_factor = 0.8  # 只使用80%的理论限制
+        self.effective_max_calls = int(max_calls * self.safety_factor)
 
     def __call__(self, f):
         def wrapped(*args, **kwargs):
             now = time.time()
-            # 移除一分钟前的调用记录
+            # 移除指定时间前的调用记录
             self.calls = [c for c in self.calls if c > now - self.per_seconds]
-            if len(self.calls) >= self.max_calls:
+            
+            # 使用更严格的有效限制
+            if len(self.calls) >= self.effective_max_calls:
                 # 计算需要等待的时间
                 sleep_time = (self.calls[0] + self.per_seconds) - now
                 if sleep_time > 0:
-                    app.logger.warning(f"Rate limit reached. Sleeping for {sleep_time:.2f} seconds.")
-                    time.sleep(sleep_time)
+                    # 添加额外缓冲时间
+                    buffer_time = 0.5
+                    total_sleep = sleep_time + buffer_time
+                    app.logger.warning(f"Rate limit reached (effective: {self.effective_max_calls}/{self.max_calls}). Sleeping for {total_sleep:.2f} seconds.")
+                    time.sleep(total_sleep)
+            
+            # 记录请求时间
             self.calls.append(time.time())
+            
+            # 添加小延迟确保请求间隔
+            if len(self.calls) > 1:
+                time_since_last = now - self.calls[-2]
+                min_interval = self.per_seconds / self.effective_max_calls
+                if time_since_last < min_interval:
+                    additional_delay = min_interval - time_since_last
+                    app.logger.debug(f"Adding delay {additional_delay:.3f}s to maintain rate limit")
+                    time.sleep(additional_delay)
+            
             return f(*args, **kwargs)
         return wrapped
 
@@ -435,17 +455,38 @@ def request_with_backoff(url, headers, params=None, max_retries=5):
     while retry_count <= max_retries:
         try:
             response = requests.get(url, headers=headers, params=params)
+            
+            # 检查是否是飞书API频率限制错误（错误码99991400）
+            try:
+                response_data = response.json()
+                if response_data.get('code') == 99991400:
+                    if retry_count < max_retries:
+                        # 飞书频率限制，使用更长的退避时间
+                        backoff_time = backoff_factor * (3 ** retry_count) + random.uniform(1, 3)  # 更长的退避
+                        app.logger.warning(f"Feishu rate limit hit (code 99991400). Retrying in {backoff_time:.2f} seconds. Retry count: {retry_count + 1}")
+                        time.sleep(backoff_time)
+                        retry_count += 1
+                        continue
+                    else:
+                        # 达到最大重试次数
+                        app.logger.error("Max retries reached for Feishu rate limit. Raising exception.")
+                        response.raise_for_status()
+            except ValueError:
+                # 响应不是JSON格式，继续正常处理
+                pass
+            
+            # 处理HTTP 429速率限制错误
             if response.status_code == 429:  # 速率限制错误
                 if retry_count < max_retries:
                     # 计算退避时间
                     backoff_time = backoff_factor * (2 ** retry_count) + random.uniform(0, 1)
-                    app.logger.warning(f"Rate limit hit. Retrying in {backoff_time:.2f} seconds. Retry count: {retry_count + 1}")
+                    app.logger.warning(f"HTTP rate limit hit. Retrying in {backoff_time:.2f} seconds. Retry count: {retry_count + 1}")
                     time.sleep(backoff_time)
                     retry_count += 1
                     continue
                 else:
                     # 达到最大重试次数
-                    app.logger.error("Max retries reached for rate limit. Raising exception.")
+                    app.logger.error("Max retries reached for HTTP rate limit. Raising exception.")
                     response.raise_for_status()
             else:
                 response.raise_for_status()
@@ -477,10 +518,10 @@ def fetch_node_children(space_id, node_token, user_access_token, page_token=None
 
     @rate_limiter
     def fetch_with_rate_limit():
-        return requests.get(url, headers=headers, params=params)
+        # 使用带有指数退避的请求函数，更好地处理频率限制
+        return request_with_backoff(url, headers, params)
 
     response = fetch_with_rate_limit()
-    response.raise_for_status()
     return response.json().get("data", {})
 
 
@@ -518,20 +559,27 @@ def fetch_all_nodes_recursively(space_id, user_access_token, parent_node_token=N
                     # 记录错误但不中断主流程
                     app.logger.error(f"Progress callback error: {str(e)}")
 
-            # 限制并发数为5，避免触发速率限制
-            with ThreadPoolExecutor(max_workers=5) as executor:
-                future_to_node = {executor.submit(fetch_all_nodes_recursively, space_id, user_access_token, item['node_token'], None, progress_callback): item for item in items if item.get('has_child')}
-                for future in as_completed(future_to_node):
-                    node = future_to_node[future]
+            # 限制并发数为2，避免触发飞书API频率限制
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                # 为每个子节点请求添加小延迟，避免同时发送大量请求
+                futures = []
+                for item in items:
+                    if item.get('has_child'):
+                        # 添加小延迟避免频率限制
+                        time.sleep(0.1)
+                        future = executor.submit(fetch_all_nodes_recursively, space_id, user_access_token, item['node_token'], None, progress_callback)
+                        futures.append((future, item))
+                
+                for future, item in futures:
                     try:
                         children = future.result()
                         # Find the node in the list and add its children
                         for n in nodes:
-                            if n['node_token'] == node['node_token']:
+                            if n['node_token'] == item['node_token']:
                                 n['children'] = children
                                 break
                     except Exception as exc:
-                        app.logger.error(f'{node["node_token"]} generated an exception: {exc}')
+                        app.logger.error(f'{item["node_token"]} generated an exception: {exc}')
                         # 继续处理其他节点，不中断整个过程
                         continue
 
@@ -572,6 +620,116 @@ def get_all_wiki_nodes(space_id):
             except ValueError:
                 return jsonify({"error": e.response.text}), e.response.status_code
         return jsonify({"error": str(e)}), 500
+
+# 兼容旧版本的API端点，用于导出全量导航数据
+@app.route('/api/wiki/nodes/export', methods=['GET'])
+def export_wiki_nodes():
+    # 从查询参数获取space_id
+    space_id = request.args.get('space_id')
+    if not space_id:
+        return jsonify({"error": "Missing space_id parameter"}), 400
+    
+    # 从查询参数或Authorization头获取token
+    user_access_token = request.args.get('token')
+    if not user_access_token:
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({"error": "Unauthorized"}), 401
+        user_access_token = auth_header.split(' ')[1]
+
+    app.logger.info(f"SSE export connection attempt started for space_id: {space_id}")
+    
+    # 创建一个队列来传递进度更新
+    import queue
+    progress_queue = queue.Queue()
+    result = []
+
+    def generate():
+        try:
+            app.logger.info(f"SSE export stream generation started for space_id: {space_id}")
+            
+            # 定义进度回调函数
+            def progress_callback(count):
+                progress_queue.put(count)
+            
+            # 在另一个线程中获取所有节点
+            import threading
+            def fetch_nodes():
+                try:
+                    nonlocal result
+                    app.logger.info(f"Starting to fetch all nodes for export, space_id: {space_id}")
+                    all_nodes = fetch_all_nodes_recursively(space_id, user_access_token, progress_callback=progress_callback)
+                    result.extend(all_nodes)
+                    app.logger.info(f"Finished fetching all nodes for export, space_id: {space_id}, node count: {len(result)}")
+                    # 发送完成信号
+                    progress_queue.put(None)
+                except Exception as e:
+                    app.logger.error(f"Error while fetching nodes for export, space_id: {space_id}, error: {str(e)}")
+                    # 发送错误信号
+                    progress_queue.put(e)
+            
+            fetch_thread = threading.Thread(target=fetch_nodes)
+            fetch_thread.start()
+            
+            # 实时发送进度更新
+            while True:
+                try:
+                    # 从队列中获取进度更新
+                    item = progress_queue.get(timeout=1)
+                    
+                    # 检查是否完成
+                    if item is None:
+                        break
+                    
+                    # 检查是否出错
+                    if isinstance(item, Exception):
+                        raise item
+                    
+                    # 发送进度更新
+                    yield f"data: {{\"type\": \"progress\", \"count\": {item}}}\n\n"
+                except queue.Empty:
+                    # 检查线程是否还在运行
+                    if not fetch_thread.is_alive():
+                        break
+                    continue
+            
+            # 等待线程完成
+            fetch_thread.join()
+            
+            # 发送最终结果
+            app.logger.info(f"Sending final export result for space_id: {space_id}, node count: {len(result)}")
+            yield f"data: {{\"type\": \"result\", \"data\": {json.dumps(result)}}}\n\n"
+            
+            # 显式结束流
+            app.logger.info(f"SSE export stream ended normally for space_id: {space_id}")
+            yield "data: \n\n"
+        except requests.exceptions.RequestException as e:
+            app.logger.error(f"Request error in export: {str(e)}")
+            if e.response is not None:
+                app.logger.error(f"Response status: {e.response.status_code}")
+                app.logger.error(f"Response content: {e.response.text}")
+                # 特别处理速率限制错误
+                if e.response.status_code == 429:
+                    app.logger.info(f"Rate limit exceeded for export, space_id: {space_id}")
+                    yield f"data: {{\"type\": \"error\", \"message\": \"Rate limit exceeded. Please try again later.\", \"retry_after\": 60}}\n\n"
+                    return
+            app.logger.info(f"Sending request error for export, space_id: {space_id}")
+            yield f"data: {{\"type\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
+            
+            # 显式结束流
+            app.logger.info(f"SSE export stream ended with request error for space_id: {space_id}")
+            yield "data: \n\n"
+        except Exception as e:
+            app.logger.error(f"Unexpected error in export: {str(e)}")
+            app.logger.info(f"Sending unexpected error for export, space_id: {space_id}")
+            yield f"data: {{\"type\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
+            
+            # 显式结束流
+            app.logger.info(f"SSE export stream ended with unexpected error for space_id: {space_id}")
+            yield "data: \n\n"
+    
+    app.logger.info(f"SSE export connection established for space_id: {space_id}")
+    return Response(generate(), content_type='text/event-stream')
 
 @app.route('/api/wiki/<space_id>/nodes/all/stream', methods=['GET'])
 def get_all_wiki_nodes_stream(space_id):
@@ -796,7 +954,7 @@ def chat_stream():
         try:
             # 使用OpenAI SDK进行流式调用
             client = OpenAI(
-                base_url="https://ark-cn-beijing.bytedance.net/api/v3",
+                base_url="https://ark.cn-beijing.volces.com/api/v3",
                 api_key=api_key
             )
             
@@ -848,6 +1006,9 @@ def replace_placeholders(prompt_template, placeholders):
     :param placeholders: 占位符字典
     :return: 替换后的提示词
     """
+    app.logger.info(f"Starting placeholder replacement with template length: {len(prompt_template) if prompt_template else 0}")
+    app.logger.debug(f"Placeholders to replace: {placeholders}")
+    
     if not prompt_template:
         app.logger.warning("Empty prompt_template provided to replace_placeholders")
         return prompt_template
@@ -881,6 +1042,7 @@ def replace_placeholders(prompt_template, placeholders):
         app.logger.warning(f"Found unreplaced placeholders: {remaining_placeholders}")
     
     app.logger.info(f"Placeholder replacement completed: {replaced_count} placeholders replaced")
+    app.logger.debug(f"Final prompt length after replacement: {len(result)}")
     return result
 
 @app.route('/api/llm/stream_analysis', methods=['POST'])
@@ -931,7 +1093,7 @@ def stream_analysis():
         try:
             # 使用OpenAI SDK进行流式调用
             client = OpenAI(
-                base_url="https://ark-cn-beijing.bytedance.net/api/v3",
+                base_url="https://ark.cn-beijing.volces.com/api/v3",
                 api_key=api_key
             )
             
@@ -944,6 +1106,8 @@ def stream_analysis():
             }
             
             app.logger.info(f"Calling LLM with params: {call_params}")
+            app.logger.info(f"Prompt sent to LLM (first 500 chars): {call_params['messages'][0]['content'][:500]}...")
+            
             stream = client.chat.completions.create(**call_params)
             
             for chunk in stream:
@@ -1022,19 +1186,49 @@ def doc_import_analysis():
             
             if node_data.get("code") == 0:
                 node_info = node_data.get("data", {})
-                actual_obj_type = node_info.get("obj_type")
-                actual_obj_token = node_info.get("obj_token")
+                # 从嵌套的node对象中获取obj_type和obj_token
+                node_detail = node_info.get("node", {})
+                actual_obj_type = node_detail.get("obj_type")
+                actual_obj_token = node_detail.get("obj_token")
                 
+                # 添加详细的调试日志，记录完整的数据结构
+                app.logger.info(f"Wiki node data structure - node_info: {node_info}")
+                app.logger.info(f"Wiki node detail - node_detail: {node_detail}")
                 app.logger.info(f"Wiki node resolved - obj_type: {actual_obj_type}, obj_token: {actual_obj_token}")
                 
+                # 配置化的支持文档类型，便于扩展
+                SUPPORTED_DOC_TYPES = ['doc', 'docx']
+                
                 # 检查obj_type是否为支持的文档类型
-                if actual_obj_type not in ['doc', 'docx']:
-                    error_msg = f"Unsupported document type: {actual_obj_type}. Only doc and docx types are supported."
+                if not actual_obj_type:
+                    error_msg = f"Failed to extract document type from wiki node. Response structure may have changed."
                     app.logger.error(error_msg)
+                    app.logger.error(f"Available fields in node_detail: {list(node_detail.keys()) if node_detail else 'None'}")
                     return jsonify({"error": error_msg}), 400
                 
-                # 使用实际的obj_token获取文档内容
-                doc_url = f"https://open.feishu.cn/open-apis/docx/v1/documents/{actual_obj_token}/raw_content"
+                # 检查obj_token是否存在
+                if not actual_obj_token:
+                    error_msg = f"Failed to extract document token from wiki node. Document token is required."
+                    app.logger.error(error_msg)
+                    app.logger.error(f"Document type: {actual_obj_type}, Available fields: {list(node_detail.keys()) if node_detail else 'None'}")
+                    return jsonify({"error": error_msg}), 400
+                
+                if actual_obj_type not in SUPPORTED_DOC_TYPES:
+                    error_msg = f"Unsupported document type: {actual_obj_type}. Only {', '.join(SUPPORTED_DOC_TYPES)} types are supported."
+                    app.logger.error(error_msg)
+                    app.logger.error(f"Document token: {actual_obj_token}, Available types: {list(node_detail.keys()) if node_detail else 'None'}")
+                    return jsonify({"error": error_msg}), 400
+                
+                # 根据文档类型构建不同的API URL，增强可扩展性
+                if actual_obj_type == 'docx':
+                    doc_url = f"https://open.feishu.cn/open-apis/docx/v1/documents/{actual_obj_token}/raw_content"
+                elif actual_obj_type == 'doc':
+                    doc_url = f"https://open.feishu.cn/open-apis/doc/v1/documents/{actual_obj_token}/raw_content"
+                else:
+                    # 理论上不会执行到这里，因为前面已经检查了支持的类型
+                    error_msg = f"Document type {actual_obj_type} not implemented yet."
+                    app.logger.error(error_msg)
+                    return jsonify({"error": error_msg}), 500
                 app.logger.info(f"Fetching document content for wiki with resolved URL: {doc_url}")
             else:
                 error_msg = node_data.get("msg", "Failed to fetch wiki node info")
@@ -1072,7 +1266,7 @@ def doc_import_analysis():
         # 合并默认占位符和传入的占位符
         all_placeholders = {
             'IMPORTED_DOCUMENT_CONTENT': doc_content,
-            'CURRENT_WIKI_STRUCTURE': wiki_node_md,
+            'KNOWLEDGE_BASE_STRUCTURE': wiki_node_md,
             'WIKI_TITLE': wiki_title or ''
         }
         all_placeholders.update(placeholders)
@@ -1080,7 +1274,7 @@ def doc_import_analysis():
         # 记录占位符替换前后的对比，便于调试
         app.logger.info(f"Placeholder replacement debug:")
         app.logger.info(f"  - IMPORTED_DOCUMENT_CONTENT length: {len(doc_content)}")
-        app.logger.info(f"  - CURRENT_WIKI_STRUCTURE length: {len(wiki_node_md)}")
+        app.logger.info(f"  - KNOWLEDGE_BASE_STRUCTURE length: {len(wiki_node_md)}")
         app.logger.info(f"  - WIKI_TITLE: {wiki_title}")
         app.logger.info(f"  - Received placeholders: {placeholders}")
         app.logger.info(f"Prompt after placeholder replacement (first 200 chars): {prompt[:200]}...")
@@ -1117,7 +1311,7 @@ def doc_import_analysis():
         try:
             # 使用OpenAI SDK进行流式调用
             client = OpenAI(
-                base_url="https://ark-cn-beijing.bytedance.net/api/v3",
+                base_url="https://ark.cn-beijing.volces.com/api/v3",
                 api_key=api_key
             )
             
@@ -1153,12 +1347,17 @@ def doc_import_analysis():
                     # 使用 json.dumps 确保内容被正确转义
                     import json
                     yield f"data: {{\"type\": \"content\", \"content\": {json.dumps(content)}}}\n\n"
+            
+            # 发送结束信号
+            yield "data: [DONE]\n\n"
         except Exception as e:
             error_msg = f"LLM Request error: {str(e)}"
             app.logger.error(error_msg)
             # 使用 json.dumps 确保错误信息被正确转义
             import json
             yield f"data: {{\"error\": {json.dumps(str(e))}}}\n\n"
+        finally:
+            app.logger.info("Finished stream response for document import analysis")
 
     app.logger.info("Starting stream response for document import analysis")
     return Response(generate(), content_type='text/event-stream')

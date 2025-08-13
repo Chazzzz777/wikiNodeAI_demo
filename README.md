@@ -121,7 +121,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 # 服务器配置
 BACKEND_PORT=5001
-REACT_APP_FRONTEND_PORT=3000
+REACT_APP_FRONTEND_PORT=3001
 
 # 日志配置
 LOG_LEVEL=INFO
@@ -154,7 +154,7 @@ npm install
 1. 在后台启动 Flask 后端服务。
 2. 启动 React 前端开发服务器。
 
-启动成功后，您可以在浏览器中访问 `http://localhost:3000` 来使用本应用。
+启动成功后，您可以在浏览器中访问 `http://localhost:3001` 来使用本应用。
 
 ## 📖 使用说明
 

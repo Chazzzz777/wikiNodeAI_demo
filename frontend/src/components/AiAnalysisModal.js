@@ -9,7 +9,7 @@ const { Text } = Typography;
 
 
 
-const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, isReasoningDone, loading, suggestions }) => {
+const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, isReasoningDone, loading, suggestions, onAnalysis, onRestartAnalysis, isFetchingFullNavigation, fullNavigationNodeCount }) => {
   const [showReasoning, setShowReasoning] = useState(false);
   const reasoningRef = useRef(null);
 
@@ -30,6 +30,23 @@ const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, i
   // 移除未使用的变量和函数引用
 
   const renderContent = () => {
+    // 如果正在获取全量导航数据，显示相应的提示信息
+    if (isFetchingFullNavigation) {
+      return (
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <Spin size="large" />
+          <div style={{ marginTop: '20px' }}>
+            <Text>正在获取全量导航数据</Text>
+            {fullNavigationNodeCount > 0 && (
+              <div style={{ marginTop: '10px' }}>
+                <Text type="secondary">已获取节点数量: {fullNavigationNodeCount}</Text>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
     if (loading && !analysisResult && !reasoningContent) {
       return <div style={{ textAlign: 'center', padding: '50px' }}><Spin size="large" /></div>;
     }
@@ -67,14 +84,53 @@ const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, i
     );
   };
 
+  // 判断是否显示开始分析按钮
+  const shouldShowStartButton = !loading && !isFetchingFullNavigation && !analysisResult && !reasoningContent;
+  
+  // 判断是否显示重新分析按钮
+  const shouldShowRestartButton = !loading && (analysisResult || reasoningContent) && onRestartAnalysis;
+  
+  // 渲染模态窗底部按钮
+  const renderFooter = () => {
+    if (shouldShowStartButton) {
+      return [
+        <Button 
+          key="start" 
+          className="gradient-purple-btn"
+          onClick={onAnalysis}
+          disabled={!onAnalysis || isFetchingFullNavigation}
+        >
+          {isFetchingFullNavigation ? '获取全量导航中...' : '开始分析'}
+        </Button>
+      ];
+    }
+    
+    if (shouldShowRestartButton) {
+      return [
+        <Button 
+          key="restart" 
+          className="gradient-purple-btn"
+          onClick={onRestartAnalysis}
+          disabled={loading}
+        >
+          重新分析
+        </Button>
+      ];
+    }
+    
+    // 默认情况下不显示任何按钮，使用右上角的叉号关闭
+    return null;
+  };
+  
   return (
     <Modal
       title="知识库 AI 诊断"
       visible={visible}
       onCancel={onClose}
-      footer={null}
+      footer={renderFooter()}
       width={800}
       className="doc-analysis-modal"
+      destroyOnClose={true}
     >
       {renderContent()}
     </Modal>
