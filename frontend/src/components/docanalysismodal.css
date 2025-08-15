@@ -68,7 +68,7 @@
 }
 
 .doc-analysis-modal .gradient-purple-btn {
-  background: linear-gradient(135deg, var(--gradient-purple-start), var(--gradient-purple-end));
+  background: linear-gradient(315deg, var(--gradient-purple-start), var(--gradient-purple-end));
   border: none;
   color: white;
   font-weight: 500;
@@ -80,7 +80,7 @@
 
 .doc-analysis-modal .gradient-purple-btn:hover {
   /* 保持背景颜色不变，只增强阴影效果 */
-  background: linear-gradient(135deg, var(--gradient-purple-start), var(--gradient-purple-end)) !important;
+  background: linear-gradient(315deg, var(--gradient-purple-start), var(--gradient-purple-end)) !important;
   border-color: transparent !important;
   color: white !important;
   transform: translateY(-1px);

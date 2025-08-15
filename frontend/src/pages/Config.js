@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, message, Space, Divider } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import './Wiki.css'; // Reuse existing styles
+import './Config.css';
 
 const { Title, Text } = Typography;
 
@@ -161,14 +161,12 @@ function Config() {
   };
   
   return (
-    <div>
-      <header className="wiki-header">
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>返回</Button>
-          <Title level={3} className="wiki-title">AI 分析配置</Title>
-        </Space>
+    <div className="config-container">
+      <header className="config-header">
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>返回</Button>
+        <Title level={3} className="config-title">AI 分析配置</Title>
       </header>
-      <main className="wiki-content">
+      <main className="config-content">
         <Card>
           <Form
             form={form}
@@ -218,7 +216,7 @@ function Config() {
               name="wikiAnalysis"
               rules={[{ required: true, message: '请输入提示词' }]}
             >
-              <Input.TextArea rows={10} placeholder="输入知识库分析的提示词" />
+              <Input.TextArea rows={15} placeholder="输入知识库分析的提示词" />
             </Form.Item>
             
             <Text type="secondary" style={{ display: 'block', marginBottom: '10px' }}>
@@ -232,7 +230,7 @@ function Config() {
               name="docAnalysis"
               rules={[{ required: true, message: '请输入提示词' }]}
             >
-              <Input.TextArea rows={10} placeholder="输入文档分析的提示词" />
+              <Input.TextArea rows={15} placeholder="输入文档分析的提示词" />
             </Form.Item>
             
             <Text type="secondary" style={{ display: 'block', marginBottom: '10px' }}>
@@ -246,7 +244,7 @@ function Config() {
               name="docImportAnalysis"
               rules={[{ required: true, message: '请输入提示词' }]}
             >
-              <Input.TextArea rows={5} placeholder="输入文档导入分析的提示词" />
+              <Input.TextArea rows={15} placeholder="输入文档导入分析的提示词" />
             </Form.Item>
             
             <Form.Item>

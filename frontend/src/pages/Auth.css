@@ -4,25 +4,54 @@
   justify-content: center;
   min-height: calc(100vh - 48px); /* 减去 app-container 的 padding */
   text-align: center;
+  animation: fadeIn 0.8s ease-out;
 }
 
 .auth-card {
-  background-color: var(--feishu-bg-color-1);
+  background: #2a2d31;
   padding: 48px;
-  border-radius: var(--feishu-radius-l);
-  box-shadow: var(--feishu-shadow-2);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 400px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.4);
 }
 
 .auth-title {
-  color: var(--feishu-text-color-1);
-  font-size: 20px;
-  font-weight: 600;
+  color: #e8e6e3;
+  font-size: 24px;
+  font-weight: 700;
   margin-bottom: 16px;
+  background: linear-gradient(45deg, #ffffff, #b0b0b0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .auth-tip {
-  color: var(--feishu-text-color-3);
+  color: #a0a0a0;
   margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* 增强antd Spin组件样式 */
+.auth-container .ant-spin {
+  color: #e8e6e3;
+}
+
+.auth-container .ant-spin-dot i {
+  background-color: #e8e6e3;
+}
+
+/* 增强antd Typography组件样式 */
+.auth-container .ant-typography {
+  color: #e8e6e3;
 }

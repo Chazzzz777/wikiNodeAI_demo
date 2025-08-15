@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/api';
 import llmApiClient, { handleStreamResponse } from '../utils/llmApiClient';
-import { Tree, Spin, Layout, Typography, Button, message } from 'antd';
+import { Tree, Spin, Typography, Button, message } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { flushSync } from 'react-dom';
 import AiAnalysisModal from '../components/AiAnalysisModal';
@@ -10,7 +10,6 @@ import DocAnalysisModal from '../components/DocAnalysisModal';
 import DocImportAnalysisModal from '../components/DocImportAnalysisModal';
 import './WikiDetail.css';
 
-const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
 const WikiDetail = () => {
@@ -1984,8 +1983,8 @@ ${batchResults.map((result, index) => {
   }, [treeData, loading, onSelect, onLoadData, expandedNodes]);
 
   return (
-    <Layout className="wiki-detail-layout">
-      <Header className="wiki-detail-header">
+    <div className="wiki-detail-layout">
+      <header className="wiki-detail-header">
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <ArrowLeftOutlined onClick={() => navigate('/')} style={{ marginRight: '16px', cursor: 'pointer', fontSize: '16px' }} />
           <Title level={3} className="wiki-detail-title">{spaceName}</Title>
@@ -1999,9 +1998,9 @@ ${batchResults.map((result, index) => {
             </Button>
           )}
         </div>
-      </Header>
-      <Layout>
-        <Sider width={350} className="wiki-detail-sider">
+      </header>
+      <div className="wiki-detail-main-content">
+        <aside className="wiki-detail-sider">
           <div style={{ padding: '10px' }}>
             <Button 
               onClick={handleExportButtonClick} 
@@ -2028,22 +2027,33 @@ ${batchResults.map((result, index) => {
             )}
           </div>
           {memoizedTree}
-        </Sider>
-        <Content className="wiki-detail-content">
+        </aside>
+        <main className="wiki-detail-content">
           {selectedNode ? (
-            <iframe
-              src={selectedNode.url}
-              title={typeof selectedNode.title === 'string' ? selectedNode.title : 'Wiki Content'}
-              className="wiki-iframe"
-              style={{ width: '100%', height: '100%', border: 'none' }}
-            />
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <iframe
+                src={selectedNode.url}
+                title={typeof selectedNode.title === 'string' ? selectedNode.title : 'Wiki Content'}
+                className="wiki-iframe"
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
           ) : (
-            <div style={{ textAlign: 'center', color: 'var(--feishu-text-color-3)', paddingTop: '40px' }}>
+            <div style={{ 
+              textAlign: 'center', 
+              color: 'var(--feishu-text-color-3)', 
+              paddingTop: '40px',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
               <p>请在左侧选择一个知识节点以查看详情</p>
             </div>
           )}
-        </Content>
-      </Layout>
+        </main>
+      </div>
       <AiAnalysisModal
         visible={modalVisible}
         onClose={() => {
@@ -2132,7 +2142,7 @@ ${batchResults.map((result, index) => {
           // 注意：文档导入分析需要用户重新选择文档，所以这里只是重置状态
         }}
       />
-    </Layout>
+    </div>
   );
 };
 
