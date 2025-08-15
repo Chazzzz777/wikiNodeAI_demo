@@ -1,0 +1,500 @@
+.config-container {
+  animation: fadeIn 0.8s ease-out;
+}
+
+.config-header {
+  background: transparent;
+  backdrop-filter: none;
+  padding: 32px 24px 24px;
+  border-bottom: none;
+  border-radius: 0;
+  margin-bottom: 24px;
+  animation: fadeIn 0.8s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+}
+
+.config-title {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: transparent;
+  background: linear-gradient(45deg, #7850b4, #469696);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  letter-spacing: -0.3px;
+  line-height: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.config-content {
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* 表单样式增强 */
+.config-content .ant-form {
+  position: relative;
+  background: rgba(42, 45, 49, 0.75);
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.config-content .ant-form::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><filter id="n" x="0" y="0"><feTurbulence type="fractalNoise" baseFrequency="3.5" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.04"/></svg>');
+  z-index: 0;
+  pointer-events: none;
+}
+
+.config-content .ant-form > * {
+  position: relative;
+  z-index: 1;
+}
+
+.config-content .ant-form-item-label > label {
+  color: #e8e6e3;
+  font-weight: 500;
+  font-size: 16px;
+}
+
+/* 输入框统一样式 */
+.config-content .ant-input,
+.config-content .ant-input-password,
+.config-content .ant-input-number,
+.config-content .ant-select-selector {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e6e3;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+/* 统一 focus 样式 */
+.config-content .ant-input:focus,
+.config-content .ant-input-password:focus,
+.config-content .ant-input-number:focus,
+.config-content .ant-select-focused .ant-select-selector {
+  border-color: rgba(120, 80, 180, 0.5);
+  box-shadow: 0 0 0 2px rgba(120, 80, 180, 0.1);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 统一 hover 样式 */
+.config-content .ant-input:hover,
+.config-content .ant-input-password:hover,
+.config-content .ant-input-number:hover,
+.config-content .ant-select:hover .ant-select-selector {
+  border-color: rgba(120, 80, 180, 0.5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(120, 80, 180, 0.15);
+}
+
+/* 确保密码输入框的hover效果正确对齐 */
+.config-content .ant-input-password:hover {
+  position: relative;
+  z-index: 1;
+}
+
+/* 密码输入框内部元素样式 */
+.config-content .ant-input-password input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 100% !important;
+  width: 100% !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  line-height: 24px !important;
+  outline: none !important;
+  margin: 0 !important;
+  display: block !important;
+}
+
+/* 密码输入框容器样式 */
+.config-content .ant-input-password {
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* 密码输入框后缀图标样式 */
+.config-content .ant-input-password .ant-input-password-icon {
+  margin-right: 8px !important;
+  color: #e8e6e3 !important;
+  flex-shrink: 0 !important;
+}
+
+/* 密码输入框内部包装器样式 */
+.config-content .ant-input-password .ant-input {
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 32px !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.config-content .ant-form-item-extra {
+  color: #a0a0a0;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* 文本域样式 */
+.config-content textarea.ant-input {
+  resize: vertical;
+  min-height: 360px; /* 15行高度，每行约24px */
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e8e6e3;
+  padding: 8px 11px;
+}
+
+/* 必填项验证失败样式 */
+.config-content .ant-form-item-has-error .ant-input,
+.config-content .ant-form-item-has-error .ant-input-number,
+.config-content .ant-form-item-has-error .ant-select-selector {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border-color: rgba(220, 38, 38, 0.5) !important;
+  color: #e8e6e3 !important;
+}
+
+/* 必填项验证失败时密码输入框样式 */
+.config-content .ant-form-item-has-error .ant-input-password {
+  background: rgba(220, 38, 38, 0.1) !important;
+  border-color: rgba(220, 38, 38, 0.5) !important;
+  color: #e8e6e3 !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* 必填项验证失败时密码输入框内部元素样式 */
+.config-content .ant-form-item-has-error .ant-input-password input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  height: 100% !important;
+  width: 100% !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  line-height: 24px !important;
+  outline: none !important;
+  margin: 0 !important;
+  display: block !important;
+  color: #e8e6e3 !important;
+}
+
+/* 必填项验证失败时密码输入框内部包装器样式 */
+.config-content .ant-form-item-has-error .ant-input-password .ant-input {
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 32px !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* 必填项验证失败时hover样式 */
+.config-content .ant-form-item-has-error .ant-input:hover,
+.config-content .ant-form-item-has-error .ant-input-number:hover,
+.config-content .ant-form-item-has-error .ant-select:hover .ant-select-selector {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2) !important;
+}
+
+/* 必填项验证失败时密码输入框hover样式 */
+.config-content .ant-form-item-has-error .ant-input-password:hover {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.2) !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* 必填项验证失败时focus样式 */
+.config-content .ant-form-item-has-error .ant-input:focus,
+.config-content .ant-form-item-has-error .ant-input-number:focus,
+.config-content .ant-form-item-has-error .ant-select-focused .ant-select-selector {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+}
+
+/* 必填项验证失败时密码输入框focus样式 */
+.config-content .ant-form-item-has-error .ant-input-password:focus {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.2) !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* 单行输入框样式 */
+.config-content .ant-input:not(textarea),
+.config-content .ant-input-password,
+.config-content .ant-input-number {
+  height: 32px;
+  min-height: 32px;
+  padding: 4px 11px;
+}
+
+/* 确保所有文案都是白色或灰色系 */
+.config-content .ant-form-item-label > label,
+.config-content .ant-form-item-extra,
+.config-content .ant-text,
+.config-content .ant-typography,
+.config-content .ant-divider-inner-text,
+.config-content .ant-select-selection-placeholder,
+.config-content .ant-select-selection-item,
+.config-content .ant-input-number-handler-wrap,
+.config-content .ant-input-number-input,
+.config-content code {
+  color: #e8e6e3 !important;
+}
+
+/* 次要文案使用更浅的灰色 */
+.config-content .ant-form-item-extra,
+.config-content .ant-divider-inner-text,
+.config-content .ant-select-selection-placeholder,
+.config-content .ant-typography-secondary {
+  color: #a0a0a0 !important;
+}
+
+/* 占位符文本 */
+.config-content .ant-input::placeholder,
+.config-content .ant-input-password::placeholder,
+.config-content .ant-input-number::placeholder,
+.config-content .ant-input-textarea::placeholder {
+  color: rgba(232, 230, 227, 0.5) !important;
+}
+
+/* 按钮样式 */
+.config-content .ant-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e8e6e3;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  font-weight: 500;
+  height: 40px;
+  padding: 0 16px;
+}
+
+.config-content .ant-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.config-content .ant-btn-primary {
+  background: linear-gradient(45deg, #7850b4, #469696);
+  border: none;
+  color: #ffffff;
+}
+
+.config-content .ant-btn-primary:hover {
+  background: linear-gradient(45deg, #7850b4, #469696), #ffffff !important;
+  background-size: 100% 100%, 100% 100% !important;
+  background-position: center, center !important;
+  background-repeat: no-repeat, no-repeat !important;
+  -webkit-background-clip: text, padding-box !important;
+  background-clip: text, padding-box !important;
+  color: transparent !important;
+  border-color: transparent !important;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.config-content .ant-btn-danger {
+  background: rgba(220, 38, 38, 0.2);
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  color: #fca5a5;
+}
+
+.config-content .ant-btn-danger:hover {
+  background: rgba(220, 38, 38, 0.3);
+  border-color: rgba(220, 38, 38, 0.6);
+  color: #ffffff;
+}
+
+/* 分隔线样式 */
+.config-content .ant-divider {
+  border-color: rgba(255, 255, 255, 0.1);
+  margin: 32px 0;
+}
+
+.config-content .ant-divider-inner-text {
+  color: #a0a0a0;
+  font-weight: 500;
+}
+
+/* 卡片样式 */
+.config-content .ant-card {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+/* 按钮组样式 */
+.config-content .ant-space {
+  gap: 12px;
+}
+
+/* 返回按钮样式 */
+.config-header .ant-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e8e6e3;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  height: 40px;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.config-header .ant-btn:hover {
+  background: #ffffff !important;
+  border-color: transparent !important;
+  color: #000000 !important;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.config-header .ant-btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.config-header .ant-btn .anticon {
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.config-header .ant-btn:hover .anticon {
+  transform: translateX(-2px);
+  color: #000000 !important;
+}
+
+/* 重置为默认按钮样式 */
+.config-content .ant-btn:not(.ant-btn-primary):hover {
+  background: #ffffff !important;
+  border-color: transparent !important;
+  color: #000000 !important;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* 表单项间距 */
+.config-content .ant-form-item {
+  margin-bottom: 24px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .config-header {
+    padding: 20px 16px 16px;
+    margin-bottom: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .config-title {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 36px;
+    height: 36px;
+  }
+
+  .config-header .ant-btn {
+    padding: 6px 12px;
+    height: 36px;
+    font-size: 13px;
+  }
+
+  .config-content .ant-form {
+    padding: 20px;
+  }
+
+  .config-content .ant-btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .config-content .ant-space {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .config-header {
+    padding: 16px 12px 12px;
+    gap: 12px;
+  }
+
+  .config-title {
+    font-size: 20px;
+    line-height: 32px;
+    height: 32px;
+  }
+
+  .config-header .ant-btn {
+    padding: 4px 10px;
+    height: 32px;
+    font-size: 12px;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 加载状态样式 */
+.config-content .ant-spin {
+  color: #e8e6e3;
+}
+
+.config-content .ant-spin-text {
+  color: #a0a0a0;
+}
+
+.config-content .ant-spin-dot i {
+  background-color: #e8e6e3;
+}

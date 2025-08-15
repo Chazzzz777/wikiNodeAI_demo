@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Form, Input, Button, Card, Typography, message, Space, Divider } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import './Wiki.css'; // Reuse existing styles
+import './Config.css';
 
 const { Title, Text } = Typography;
 
@@ -117,6 +117,7 @@ function Config() {
   useEffect(() => {
     const savedApiKey = localStorage.getItem('llm_api_key') || '';
     const savedModel = localStorage.getItem('llm_model') || 'doubao-seed-1-6-thinking-250615';
+    const savedMaxTokens = localStorage.getItem('llm_max_tokens') || '4096';
     const savedPrompts = {
       wikiAnalysis: localStorage.getItem('prompt_wiki_analysis') || DEFAULT_PROMPTS.wikiAnalysis,
       docAnalysis: localStorage.getItem('prompt_doc_analysis') || DEFAULT_PROMPTS.docAnalysis,
@@ -126,6 +127,7 @@ function Config() {
     form.setFieldsValue({
       apiKey: savedApiKey,
       model: savedModel,
+      maxTokens: savedMaxTokens,
       ...savedPrompts
     });
   }, [form]);
@@ -135,6 +137,7 @@ function Config() {
     try {
       localStorage.setItem('llm_api_key', values.apiKey);
       localStorage.setItem('llm_model', values.model);
+      localStorage.setItem('llm_max_tokens', values.maxTokens || '4096');
       localStorage.setItem('prompt_wiki_analysis', values.wikiAnalysis);
       localStorage.setItem('prompt_doc_analysis', values.docAnalysis);
       localStorage.setItem('prompt_doc_import_analysis', values.docImportAnalysis);
@@ -146,9 +149,11 @@ function Config() {
   };
   
   // 重置为默认配置
-  const handleResetDefaults = () => {
+  const handleReset = () => {
     form.setFieldsValue({
+      apiKey: '',
       model: 'doubao-seed-1-6-thinking-250615',
+      maxTokens: '4096',
       wikiAnalysis: DEFAULT_PROMPTS.wikiAnalysis,
       docAnalysis: DEFAULT_PROMPTS.docAnalysis,
       docImportAnalysis: DEFAULT_PROMPTS.docImportAnalysis
@@ -156,14 +161,12 @@ function Config() {
   };
   
   return (
-    <div>
-      <header className="wiki-header">
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>返回</Button>
-          <Title level={3} className="wiki-title">AI 分析配置</Title>
-        </Space>
+    <div className="config-container">
+      <header className="config-header">
+        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(-1)}>返回</Button>
+        <Title level={3} className="config-title">AI 分析配置</Title>
       </header>
-      <main className="wiki-content">
+      <main className="config-content">
         <Card>
           <Form
             form={form}
@@ -187,6 +190,20 @@ function Config() {
               <Input placeholder="例如: doubao-seed-1-6-thinking-250615" />
             </Form.Item>
             
+            <Form.Item
+              label="最大输出令牌数 (max_tokens)"
+              name="maxTokens"
+              rules={[{ required: false, message: '请输入最大输出令牌数' }]}
+              extra="控制AI分析结果的最大长度，默认值为4096，建议范围1024-8192"
+            >
+              <Input 
+                type="number" 
+                placeholder="例如: 4096" 
+                min="1" 
+                max="32768"
+              />
+            </Form.Item>
+            
             <Divider>AI 分析提示词配置</Divider>
             
             <Text type="secondary" style={{ display: 'block', marginBottom: '10px' }}>
@@ -199,7 +216,7 @@ function Config() {
               name="wikiAnalysis"
               rules={[{ required: true, message: '请输入提示词' }]}
             >
-              <Input.TextArea rows={10} placeholder="输入知识库分析的提示词" />
+              <Input.TextArea rows={15} placeholder="输入知识库分析的提示词" />
             </Form.Item>
             
             <Text type="secondary" style={{ display: 'block', marginBottom: '10px' }}>
@@ -213,7 +230,7 @@ function Config() {
               name="docAnalysis"
               rules={[{ required: true, message: '请输入提示词' }]}
             >
-              <Input.TextArea rows={10} placeholder="输入文档分析的提示词" />
+              <Input.TextArea rows={15} placeholder="输入文档分析的提示词" />
             </Form.Item>
             
             <Text type="secondary" style={{ display: 'block', marginBottom: '10px' }}>
@@ -227,13 +244,13 @@ function Config() {
               name="docImportAnalysis"
               rules={[{ required: true, message: '请输入提示词' }]}
             >
-              <Input.TextArea rows={5} placeholder="输入文档导入分析的提示词" />
+              <Input.TextArea rows={15} placeholder="输入文档导入分析的提示词" />
             </Form.Item>
             
             <Form.Item>
               <Space>
                 <Button type="primary" htmlType="submit">保存配置</Button>
-                <Button onClick={handleResetDefaults}>重置为默认</Button>
+                <Button onClick={handleReset}>重置为默认</Button>
               </Space>
             </Form.Item>
           </Form>

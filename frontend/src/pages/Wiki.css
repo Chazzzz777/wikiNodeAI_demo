@@ -1,51 +1,141 @@
-.wiki-header {
+/* 标题区域 - 直接显示在底色上 */
+.wiki-title-section {
+  padding: 60px 16px 40px 16px; /* 增加顶部和底部间距 */
+  margin-bottom: 48px; /* 增加与卡片列表的间距 */
+  animation: fadeIn 0.8s ease-out;
+  background-color: transparent; /* 设置背景色为透明 */
+}
+
+.wiki-title-container {
+  max-width: 1400px; /* 增加最大宽度 */
+  margin: 0 auto;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 24px;
-  background-color: var(--feishu-bg-color-1);
-  border-bottom: 1px solid var(--feishu-border-color-1);
+  align-items: flex-start;
+  gap: 32px;
+  background-color: transparent; /* 确保容器背景透明 */
+  backdrop-filter: none; /* 移除任何背景滤镜效果 */
+}
+
+.wiki-title-content {
+  flex: 1;
+  text-align: left; /* 确保内容居左 */
+  padding-left: 0; /* 移除左侧内边距 */
+  background-color: transparent; /* 确保内容区域背景透明 */
+  backdrop-filter: none; /* 移除任何背景滤镜效果 */
+}
+
+.wiki-title-actions {
+  flex-shrink: 0;
+  padding-top: 8px; /* 微调按钮位置 */
 }
 
 .wiki-title {
-  font-family: 'Arial', sans-serif; /* 举例，可以选择更具设计感的字体 */
-  font-size: 28px;
-  font-weight: bold;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 96px; /* 从80px增加到96px */
+  font-weight: 900; /* 从800增加到900 */
   color: transparent;
-  background: linear-gradient(45deg, #6a11cb, #2575fc);
+  background: linear-gradient(45deg, #ffffff, #b0b0b0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 24px 0; /* 增加底部间距 */
+  letter-spacing: -2px; /* 调整字间距，增强紧凑感 */
+  line-height: 1.05; /* 调整行高，更紧凑 */
+  text-align: left; /* 确保居左对齐 */
+  text-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1); /* 减少阴影层数和强度，让渐变过渡更自然 */
+  position: relative;
+}
+
+.wiki-title::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  pointer-events: none;
+  /* 移除border-radius、mix-blend-mode和filter，避免产生矩形遮罩效果 */
+}
+
+.wiki-subtitle {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-size: 16px; /* 从24px缩小到16px */
+  font-weight: 400; /* 从500降低到400 */
+  color: rgba(255, 255, 255, 0.8); /* 降低不透明度 */
+  line-height: 1.5; /* 调整行高 */
+  margin: 0;
+  letter-spacing: 0.2px; /* 调整字间距 */
+  text-align: left; /* 确保居左对齐 */
+  max-width: 800px; /* 限制最大宽度，提高可读性 */
+}
+
+/* 标题区域按钮样式 */
+.wiki-title-actions .ant-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none; /* 移除边框 */
+  color: #ffffff;
+  font-weight: 500;
+  padding: 8px 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* 添加模糊阴影 */
+  will-change: transform, box-shadow; /* 性能优化 */
+}
+
+/* 为按钮内的文字设置过渡效果 */
+.wiki-title-actions .ant-btn span {
+  display: inline-block;
+  transition: all 0.3s ease;
+  color: #ffffff; /* 默认文字颜色 */
+}
+
+.wiki-title-actions .ant-btn:hover {
+  transform: translateY(-2px) scale(1.05); /* 放大并上浮 */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* 增强阴影 */
+  background: rgba(255, 255, 255, 0.1); /* 保持背景色不变 */
+}
+
+/* 悬停时为文字应用渐变色 */
+.wiki-title-actions .ant-btn:hover span {
+  color: transparent;
+  background: linear-gradient(45deg, #7850b4, #469696);
   -webkit-background-clip: text;
   background-clip: text;
-  margin: 0;
+  -webkit-text-fill-color: transparent;
 }
 
-.api-key-section {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.api-key-group .ant-input-password {
-  border-radius: var(--feishu-radius-m) 0 0 var(--feishu-radius-m);
-}
-
-.api-key-group .ant-btn {
-  border-radius: 0 var(--feishu-radius-m) var(--feishu-radius-m) 0;
+.wiki-title-actions .ant-btn:active {
+  transform: translateY(0) scale(1); /* 按下时恢复原状 */
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .wiki-content {
-  padding: 24px;
+  padding: 20px 0 0 0; /* 增加卡片列表顶部间距 */
+  animation: fadeIn 0.8s ease-out;
 }
 
 .scrollable-container {
   height: calc(100vh - 160px); /* 根据实际布局调整 */
   overflow: auto;
-  padding: 0 12px;
+  padding: 64px; /* 进一步增加内边距到64px，确保hover阴影不被遮挡 */
+  /* 去掉宽度限制，让内容充分利用屏幕空间 */
+  max-width: none;
+  width: 100%;
 }
 
 .wiki-list .ant-list-item {
   padding: 0 !important; /* 移除内边距 */
   border: none !important; /* 移除边框 */
   background-color: transparent !important; /* 移除背景色 */
-  margin-bottom: 16px;
+  margin-bottom: 24px; /* 增加列表项间距，为hover放大提供更多空间 */
+  animation: fadeInUp 0.5s ease-out;
+  animation-fill-mode: both;
 }
 
 .wiki-list .ant-list-item:hover {
@@ -53,25 +143,740 @@
   transform: none !important; /* 移除悬浮效果 */
 }
 
+/* 聚光灯激活状态 */
+.wiki-list .ant-card.spotlight-active {
+  z-index: 10;
+}
+
+/* 卡片样式系统 - 基础变量 */
+:root {
+  --card-bg-primary: #2a2d31;
+  --card-bg-inner: #34373b;
+  --card-border-color: rgba(255, 255, 255, 0.1);
+  --card-border-hover-color: rgba(255, 255, 255, 0.2);
+  --card-text-primary: #e8e6e3;
+  --card-text-secondary: #a0a0a0;
+  --card-shadow-normal: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --card-shadow-hover: 0 16px 32px rgba(0, 0, 0, 0.4);
+  --card-border-radius: 16px;
+  --card-inner-border-radius: 12px;
+  --card-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --card-spotlight-opacity: 0.15;
+}
+
+/* 基础卡片样式 - 完全移除背景遮罩 */
 .wiki-list .ant-card {
-  transition: box-shadow 0.3s, transform 0.3s;
+  background: transparent; /* 设置为完全透明，移除背景遮罩 */
+  border: none; /* 去除边框线 */
+  border-radius: var(--card-border-radius);
+  transition: var(--card-transition);
+  overflow: visible; /* 改为visible避免放大时被裁剪 */
+  position: relative;
+  /* 移除模糊效果，避免遮挡渐变背景 */
+  backdrop-filter: none;
+  cursor: pointer;
+  will-change: transform, box-shadow;
+  transform-origin: center center; /* 确保从中心点放大 */
+  margin: 8px; /* 增加卡片外边距，为hover放大提供更多空间 */
 }
 
+/* 竖向卡片特殊样式 - 渐变背景 */
+.wiki-card-vertical {
+  /* 背景通过JavaScript动态设置，覆盖基础卡片样式 */
+  border: none; /* 确保无边框 */
+}
+
+/* 聚光灯效果 - 修复遮罩层对齐问题 */
+.wiki-list .ant-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, var(--card-spotlight-opacity)) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  border-radius: var(--card-border-radius); /* 添加圆角 */
+  /* 设置较低层级，避免遮挡内容 */
+  z-index: 0;
+  /* 确保在非悬停状态下完全不可见 */
+  visibility: hidden;
+  /* 确保遮罩层跟随卡片变换，修复顶部闪烁问题 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.wiki-list .ant-card:hover::before {
+  opacity: 1;
+  /* 悬停时提升层级，确保聚光灯效果正确覆盖所有内容 */
+  z-index: 5;
+  /* 悬停时设置为可见 */
+  visibility: visible;
+  /* 同步卡片的变换效果，确保遮罩层完全对齐 */
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* 渐变覆盖层 - 修复遮罩层对齐问题 */
+.wiki-list .ant-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 完全移除背景渐变，消除任何遮罩效果 */
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  border-radius: var(--card-border-radius); /* 添加圆角 */
+  /* 降低层级，避免遮挡标题和描述区域 */
+  z-index: -1;
+  /* 确保遮罩层跟随卡片变换，修复顶部闪烁问题 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.wiki-list .ant-card:hover::after {
+  opacity: 1;
+  /* 悬停时保持较低层级，避免遮挡内容 */
+  z-index: 1;
+  /* 同步卡片的变换效果，确保遮罩层完全对齐 */
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* 卡片悬停效果 */
 .wiki-list .ant-card:hover {
-  box-shadow: var(--feishu-shadow-2);
-  transform: translateY(-2px);
+  transform: translateY(-4px) scale(1.01); /* 减少放大比例 */
+  box-shadow: var(--card-shadow-hover);
+  z-index: 20; /* 确保放大时层级正确 */
 }
 
-.wiki-list .ant-list-item-meta-title a {
-  color: var(--feishu-text-color-1);
+/* 卡片头部 - 内嵌卡片样式 */
+.wiki-list .ant-card-head {
+  background: rgba(42, 45, 49, 0.7); /* Adjust the alpha for transparency */
+  border-bottom: none;
+  padding: 20px 0 0 0; /* 调整padding，移除左右内边距 */
+  position: relative;
+  z-index: 0;
+  box-shadow: none;
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: auto;
+  border-top-left-radius: var(--card-inner-border-radius);
+  border-top-right-radius: var(--card-inner-border-radius);
+  margin: 8px 0 0; /* 仅为内嵌卡片的顶部添加外边距 */
+  overflow: hidden; /* 隐藏伪元素溢出 */
+}
+
+.wiki-list .ant-card-head-title {
+  color: var(--card-text-primary);
+  font-size: 18px;
   font-weight: 600;
-  font-size: 16px;
+  line-height: 1.4;
+  margin: 0;
+  /* 移除hover效果 */
+  padding: 0;
+  position: relative; /* 提拉层级 */
+  z-index: 1;
 }
 
+/* 移除卡片标题的hover效果 */
+.wiki-list .ant-card:hover .ant-card-head-title {
+  color: var(--card-text-primary);
+  text-shadow: none;
+}
+
+/* 卡片内容 - 内嵌卡片样式 */
+.wiki-list .ant-card-body {
+  color: var(--card-text-secondary);
+  padding: 16px 24px 20px 24px; /* 调整padding */
+  font-size: 14px;
+  line-height: 1.6;
+  position: relative;
+  z-index: 0;
+  background: rgba(42, 45, 49, 0.7);
+  box-shadow: none;
+  transform-origin: center center;
+  will-change: transform;
+  pointer-events: auto;
+  border-bottom-left-radius: var(--card-inner-border-radius);
+  border-bottom-right-radius: var(--card-inner-border-radius);
+  margin: 0; /* 移除外边距，使其与外部卡片对齐 */
+  overflow: hidden; /* 隐藏伪元素溢出 */
+}
+
+/* 内嵌卡片类纸膜质感 */
+.wiki-list .ant-card-head::before,
+.wiki-list .ant-card-body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><filter id="n" x="0" y="0"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100" height="100" filter="url(%23n)" opacity="0.07"/></svg>');
+  z-index: 0; /* 在内容之下 */
+  pointer-events: none;
+}
+
+.wiki-list .ant-list-item-meta {
+  position: relative;
+  z-index: 1;
+}
+
+.wiki-list .ant-list-item-meta-title {
+  color: var(--card-text-primary);
+  font-weight: 600;
+  font-size: 18px;
+  /* 移除hover效果 */
+  display: block;
+  padding: 0;
+  text-decoration: none;
+  position: relative;
+  line-height: 1.4;
+  /* 确保跟随卡片变换，避免位置不对齐 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 移除下划线效果 */
+.wiki-list .ant-list-item-meta-title a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 0;
+  background: transparent;
+  /* 移除过渡效果 */
+}
+
+/* 移除列表项标题链接的hover效果 */
 .wiki-list .ant-list-item-meta-title a:hover {
-  color: var(--feishu-color-primary);
+  color: var(--card-text-primary);
+  text-shadow: none;
+}
+
+.wiki-list .ant-list-item-meta-title a:hover::after {
+  width: 0;
 }
 
 .wiki-list .ant-list-item-meta-description {
-  color: var(--feishu-text-color-3);
+  color: var(--card-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  margin-top: 12px;
+  /* 移除hover效果 */
+  display: block;
+  /* 确保跟随卡片变换，避免位置不对齐 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 移除列表项描述文字的hover效果 */
+.wiki-list .ant-card:hover .ant-list-item-meta-description {
+  color: var(--card-text-secondary);
+}
+
+/* 加载动画样式 */
+.wiki-content .ant-spin {
+  color: #e8e6e3;
+}
+
+.wiki-content .ant-spin-text {
+  color: #a0a0a0;
+  font-size: 14px;
+}
+
+.wiki-content .ant-spin-dot i {
+  background-color: #e8e6e3;
+}
+
+/* 无更多数据提示样式 */
+.wiki-content .ant-list-empty-text {
+  color: #a0a0a0;
+  font-size: 14px;
+}
+
+/* 可扩展的卡片变体 */
+.wiki-list .ant-card.card-compact {
+  --card-border-radius: 12px;
+  padding: 0;
+}
+
+.wiki-list .ant-card.card-compact .ant-card-head {
+  padding: 16px 20px 12px 20px;
+}
+
+.wiki-list .ant-card.card-compact .ant-card-body {
+  padding: 0 20px 16px 20px;
+}
+
+.wiki-list .ant-card.card-elevated {
+  --card-shadow-normal: 0 12px 28px rgba(0, 0, 0, 0.3);
+  --card-shadow-hover: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border: none;
+}
+
+/* 性能优化：使用will-change提示浏览器优化 */
+.wiki-list .ant-card {
+  will-change: transform, box-shadow;
+}
+
+/* 暗色主题适配 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card-bg-primary: #1f2225;
+    --card-border-color: rgba(255, 255, 255, 0.08);
+    --card-text-secondary: rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* 竖向卡片样式 */
+.wiki-card-vertical {
+  height: 260px; /* 减少固定高度，从280px改为260px，让渐变背景有更多展示空间 */
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--card-border-radius);
+  overflow: hidden;
+  position: relative;
+  /* 渐变背景将通过JavaScript动态设置 */
+  /* 确保哑光效果叠加层能够正确定位 */
+  transform-style: preserve-3d;
+}
+
+/* 卡片流光效果 */
+.wiki-card-vertical::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.08) 52%,
+    transparent 60%
+  );
+  background-size: 300% 300%;
+  z-index: 1; /* 在内容之上 */
+  pointer-events: none;
+  border-radius: var(--card-border-radius);
+  animation: sweep-light 6s linear infinite;
+}
+
+.wiki-card-cover {
+  height: 40px; /* 进一步减少封面区域高度，从60px改为40px，让渐变背景有更多展示空间 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  /* 背景通过JavaScript动态设置 */
+  
+  /* 性能优化 */
+  will-change: transform; /* 提示浏览器优化 */
+  backface-visibility: hidden; /* 防止闪烁 */
+  transform: translateZ(0); /* 启用GPU加速 */
+}
+
+/* 斜向渐变阴影层 */
+
+
+/* 哑光效果叠加层 - 修复遮罩层对齐问题 */
+.wiki-card-matte-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 背景通过JavaScript动态设置，但设置为完全透明以消除遮罩 */
+  pointer-events: none;
+  /* 降低层级，确保在渐变背景下方 */
+  z-index: -1;
+  /* 确保覆盖整个卡片区域 */
+  border-radius: var(--card-border-radius);
+  /* 完全移除遮罩效果 */
+  opacity: 0; /* 设置为完全透明 */
+  /* 确保遮罩层跟随卡片变换，修复顶部闪烁问题 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 卡片封面内容增强 - 修复遮罩层对齐问题 */
+.wiki-card-cover::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* 完全移除背景渐变，消除任何遮罩效果 */
+  background: transparent;
+  pointer-events: none;
+  /* 移除混合模式，避免产生遮罩 */
+  mix-blend-mode: normal;
+  /* 降低层级，避免遮挡标题和描述区域 */
+  z-index: -1;
+  /* 确保遮罩层跟随卡片变换，修复顶部闪烁问题 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes sweep-light {
+  0% {
+    background-position: 150% 150%;
+  }
+  100% {
+    background-position: -50% -50%;
+  }
+}
+
+
+
+/* 流动渐变动画 - 持续斜向流动 */
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 0%;
+    transform: translateZ(0); /* 启用GPU加速 */
+  }
+  50% {
+    background-position: 100% 100%;
+    transform: translateZ(0); /* 启用GPU加速 */
+  }
+  100% {
+    background-position: 200% 200%;
+    transform: translateZ(0); /* 启用GPU加速 */
+  }
+}
+
+.wiki-card-vertical .ant-card-body {
+  flex: 1;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: rgba(52, 55, 59, 0.7);
+  backdrop-filter: none;
+  border-radius: var(--card-inner-border-radius);
+  position: relative;
+  z-index: 0;
+  min-height: 140px;
+  transform-origin: center center;
+  will-change: transform;
+  margin: 8px 0 0 0; /* 仅为内嵌卡片的顶部添加外边距 */
+}
+
+.wiki-card-vertical .ant-card-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wiki-card-vertical .ant-card-meta-title {
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--card-text-primary);
+}
+
+.wiki-card-title {
+  color: var(--card-text-primary);
+  text-decoration: none;
+  /* 移除hover效果 */
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* 确保跟随卡片变换，避免位置不对齐 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 移除竖向卡片标题的hover效果 */
+.wiki-card-title:hover {
+  color: var(--card-text-primary);
+  text-shadow: none;
+}
+
+.wiki-card-description {
+  color: var(--card-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 1;
+  /* 确保跟随卡片变换，避免位置不对齐 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+/* 竖向卡片的聚光灯效果适配 - 修复遮罩层对齐问题 */
+.wiki-card-vertical::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, var(--card-spotlight-opacity)) 0%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  /* 降低默认层级，只在悬停时提升 */
+  z-index: 0;
+  /* 确保在非悬停状态下完全不可见 */
+  visibility: hidden;
+  /* 确保遮罩层跟随卡片变换，修复顶部闪烁问题 */
+  transform-origin: center center;
+  will-change: transform;
+}
+
+.wiki-card-vertical:hover::before {
+  opacity: 1;
+  /* 悬停时提升层级，确保聚光灯效果正确覆盖所有内容 */
+  z-index: 5;
+  /* 悬停时设置为可见 */
+  visibility: visible;
+  /* 同步卡片的变换效果，确保遮罩层完全对齐 */
+  transform: translateY(-6px) scale(1.02);
+}
+
+/* 竖向卡片的悬停效果 */
+.wiki-card-vertical:hover {
+  transform: translateY(-6px) scale(1.02);
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--card-border-hover-color);
+  z-index: 20;
+}
+
+/* 减少动画偏好支持 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .wiki-list .ant-card {
+    transition: none;
+    transform: none;
+  }
+  
+  .wiki-list .ant-card:hover {
+    transform: none;
+  }
+  
+  .wiki-list .ant-card::before,
+  .wiki-list .ant-card::after {
+    transition: none;
+  }
+  
+  /* 禁用所有动画 */
+  .wiki-card-cover {
+    animation: none !important;
+    background-position: 0% 50% !important; /* 重置背景位置 */
+    will-change: auto !important; /* 移除性能优化提示 */
+  }
+  
+
+  
+  /* 禁用所有过渡效果 */
+  .wiki-card-vertical {
+    transition: none !important;
+  }
+  
+  /* 禁用悬停效果 */
+  .wiki-card-vertical:hover {
+    transform: none !important;
+    box-shadow: none !important;
+  }
+  
+  /* 禁用所有变换 */
+  .wiki-card-cover,
+  .wiki-card-body,
+  .wiki-card-title,
+  .wiki-card-description {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* 响应式设计 - 优化卡片布局 */
+@media (max-width: 1400px) {
+  .wiki-list {
+    /* 超大屏幕减少列数 */
+  }
+}
+
+@media (max-width: 1200px) {
+  .wiki-list {
+    /* 大屏幕适配 */
+  }
+  
+  .wiki-card-vertical {
+    height: 240px; /* 进一步减少高度，从260px改为240px */
+  }
+  
+  .wiki-card-cover {
+    height: 35px; /* 从70px减少到35px，保持一致性 */
+  }
+}
+
+@media (max-width: 992px) {
+  .wiki-list {
+    /* 中等屏幕适配 */
+  }
+  
+  .wiki-card-vertical {
+    height: 220px; /* 进一步减少高度，从240px改为220px */
+  }
+  
+  .wiki-card-cover {
+    height: 30px; /* 从60px减少到30px，保持一致性 */
+  }
+}
+
+@media (max-width: 768px) {
+  .wiki-title-section {
+    padding: 48px 16px 32px 16px; /* 移动端适配 */
+    margin-bottom: 32px;
+  }
+
+  .wiki-title-container {
+    flex-direction: column;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .wiki-title-content {
+    width: 100%;
+  }
+
+  .wiki-title-actions {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .wiki-title {
+    font-size: 48px; /* 移动端适配 */
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+
+  .wiki-subtitle {
+    font-size: 20px; /* 移动端适配 */
+    line-height: 1.4;
+    max-width: 100%; /* 移动端取消宽度限制 */
+  }
+
+  .wiki-content {
+    padding: 16px 0 0 0; /* 移动端减少顶部间距 */
+  }
+
+  .scrollable-container {
+    padding: 0 16px;
+  }
+
+  .wiki-card-vertical {
+    height: 200px; /* 进一步减少高度，从220px改为200px */
+    max-width: 320px; /* 移动端限制最大宽度 */
+  }
+  
+  .wiki-card-cover {
+    height: 25px; /* 从50px减少到25px，保持一致性 */
+  }
+  
+  
+  .wiki-card-description {
+    -webkit-line-clamp: 2; /* 移动端减少显示行数 */
+    min-height: 42px; /* 2行文字的最小高度 */
+  }
+}
+
+@media (max-width: 480px) {
+  .wiki-title-section {
+    padding: 40px 12px 24px 12px; /* 小屏幕进一步减少间距 */
+    margin-bottom: 24px;
+  }
+
+  .wiki-title {
+    font-size: 36px; /* 小屏幕适配 */
+    margin-bottom: 12px;
+    letter-spacing: -0.3px;
+  }
+
+  .wiki-subtitle {
+    font-size: 18px; /* 小屏幕适配 */
+    line-height: 1.4;
+  }
+
+  .wiki-content {
+    padding: 12px 0 0 0; /* 小屏幕进一步减少顶部间距 */
+  }
+
+  .scrollable-container {
+    padding: 0 12px;
+  }
+
+  .wiki-card-vertical {
+    height: 180px; /* 进一步减少高度，从200px改为180px */
+    max-width: 280px;
+  }
+  
+  .wiki-card-cover {
+    height: 20px; /* 从40px减少到20px，保持一致性 */
+  }
+  
+  
+  .wiki-card-vertical .ant-card-body {
+    padding: 12px;
+  }
+  
+  .wiki-card-vertical .ant-card-meta-title {
+    font-size: 14px;
+  }
+  
+  .wiki-card-description {
+    font-size: 13px;
+    -webkit-line-clamp: 2;
+    min-height: 36px;
+  }
+}
+
+/* 超小屏幕处理 */
+@media (max-width: 320px) {
+  .wiki-card-vertical {
+    max-width: 260px;
+    height: 160px; /* 进一步减少高度，从180px改为160px */
+  }
+  
+  .wiki-card-cover {
+    height: 15px; /* 从35px减少到15px，保持一致性 */
+  }
 }

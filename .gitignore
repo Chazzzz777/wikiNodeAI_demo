@@ -13,3 +13,5 @@ build
 
 # Misc
 .DS_Store
+logs/
+backend/logs/

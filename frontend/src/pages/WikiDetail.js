@@ -2,15 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/api';
 import llmApiClient, { handleStreamResponse } from '../utils/llmApiClient';
-import { Tree, Spin, Layout, Typography, Button, message } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import { Tree, Spin, Typography, Button, message } from 'antd';
+// import { ArrowLeftOutlined } from '@ant-design/icons'; // 替换为自定义SVG图标
 import { flushSync } from 'react-dom';
 import AiAnalysisModal from '../components/AiAnalysisModal';
 import DocAnalysisModal from '../components/DocAnalysisModal';
 import DocImportAnalysisModal from '../components/DocImportAnalysisModal';
 import './WikiDetail.css';
 
-const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
 const WikiDetail = () => {
@@ -33,7 +32,18 @@ const WikiDetail = () => {
     suggestions: [],
     hasAnalysis: false,
     isFetchingFullNavigation: false,
-    fullNavigationNodeCount: 0
+    fullNavigationNodeCount: 0,
+    // 新增：分批处理相关状态
+    isBatchProcessing: false,
+    batchProgress: {
+      completed: 0,
+      total: 0,
+      progress: 0,
+      message: ''
+    },
+    batchResults: [],
+    currentBatchIndex: 0,
+    finalSummary: ''
   });
   
   // 当前文档AI诊断的独立状态管理
@@ -56,7 +66,18 @@ const WikiDetail = () => {
     suggestions: [],
     hasAnalysis: false,
     isFetchingFullNavigation: false,
-    fullNavigationNodeCount: 0
+    fullNavigationNodeCount: 0,
+    // 新增：分批处理相关状态
+    isBatchProcessing: false,
+    batchProgress: {
+      completed: 0,
+      total: 0,
+      progress: 0,
+      message: ''
+    },
+    batchResults: [],
+    currentBatchIndex: 0,
+    finalSummary: ''
   });
   // State for full navigation export
   const [exporting, setExporting] = useState(false);
@@ -523,6 +544,7 @@ const WikiDetail = () => {
       
       const storedApiKey = localStorage.getItem('llm_api_key');
       const storedModel = localStorage.getItem('llm_model') || 'doubao-seed-1-6-thinking-250615';
+      const storedMaxTokens = localStorage.getItem('llm_max_tokens') || '4096';
       // 使用包含占位符的提示词模板
       const storedPrompt = localStorage.getItem('prompt_doc_import_analysis') || `你是一位专业的知识管理专家，具备以下能力：
 1. 深入理解文档内容，分析其主题、关键信息和潜在价值。
@@ -579,6 +601,50 @@ const WikiDetail = () => {
         source: '文档导入AI评估'
       });
       
+      // 计算总节点数量以判断是否需要分批处理
+      const countTotalNodes = (nodes) => {
+        let count = 0;
+        const traverse = (nodeList) => {
+          nodeList.forEach(node => {
+            count++;
+            if (node.children && node.children.length > 0) {
+              traverse(node.children);
+            }
+          });
+        };
+        traverse(nodes);
+        return count;
+      };
+      
+      const totalNodeCount = countTotalNodes(allNodes);
+      console.log(`[文档导入AI评估] 总节点数量: ${totalNodeCount}`);
+      
+      // 检查是否需要分批处理（超过2500个节点）
+      if (totalNodeCount > 2500) {
+        console.log(`[文档导入AI评估] 节点数量超过阈值，启用分批处理`);
+        // 使用分批处理逻辑
+        await processLargeKnowledgeBase(
+          allNodes,
+          spaceId,
+          storedApiKey,
+          storedModel,
+          storedMaxTokens,
+          storedPrompt,
+          setDocImportAnalysisState,
+          getSpaceName,
+          handleStreamResponse,
+          {
+            docToken: docToken,
+            docType: docType,
+            userAccessToken: userAccessToken
+          }
+        );
+        return;
+      }
+      
+      console.log(`[文档导入AI评估] 节点数量未超过阈值，使用单次处理`);
+      
+      // 原有的单次处理逻辑（节点数 <= 2500）
       const wiki_node_md = formatNodesToMarkdown(allNodes);
       // 获取知识库标题
       const wikiTitle = await getSpaceName(spaceId);
@@ -603,6 +669,7 @@ const WikiDetail = () => {
           wiki_node_md: wiki_node_md,
           api_key: storedApiKey,
           model: storedModel,
+          max_tokens: parseInt(storedMaxTokens),
           prompt_template: storedPrompt,
           placeholders: placeholders,
           wiki_title: wikiTitle
@@ -730,6 +797,541 @@ const WikiDetail = () => {
     return markdown;
   };
 
+  // 新增：识别根节点并分批处理的工具函数
+  const identifyRootNodes = (nodes) => {
+    console.log(`[识别根节点] 开始分析 ${nodes.length} 个节点`);
+    
+    // 根节点识别逻辑：
+    // 1. 没有parent属性的节点
+    // 2. level为0的节点
+    // 3. 在传入的nodes数组中直接出现的节点（即顶层节点）
+    const rootNodes = nodes.filter(node => {
+      const hasNoParent = !node.parent;
+      const isLevelZero = node.level === 0;
+      const isTopLevel = nodes.some(n => 
+        n.children && n.children.some(child => 
+          child.key === node.key || child.node_token === node.node_token
+        )
+      ) === false; // 不是其他节点的子节点
+      
+      const isRoot = hasNoParent || isLevelZero || isTopLevel;
+      
+      if (isRoot) {
+        console.log(`[识别根节点] 找到根节点: ${node.title} (key: ${node.key || node.node_token})`);
+      }
+      
+      return isRoot;
+    });
+    
+    console.log(`[识别根节点] 识别到 ${rootNodes.length} 个根节点`);
+    return rootNodes;
+  };
+
+  // 新增：构建单个根节点及其子树的Markdown
+  const formatRootNodeToMarkdown = (rootNode, allNodes) => {
+    let markdown = '';
+    
+    // 递归查找并构建指定节点的子树
+    const buildSubtreeMarkdown = (node, level, targetNodeId = null) => {
+      const token = node.key || node.node_token || '[NODE TOKEN MISSING]';
+      const title = node.title.props ? node.title.props.children : node.title;
+      markdown += `${'  '.repeat(level)}- ${title} (token: ${token})\n`;
+      
+      if (node.children && node.children.length > 0) {
+        node.children.forEach(child => {
+          buildSubtreeMarkdown(child, level + 1);
+        });
+      }
+    };
+    
+    // 从根节点开始构建
+    buildSubtreeMarkdown(rootNode, 0);
+    return markdown;
+  };
+
+  // 新增：分批处理超大型知识库的核心函数
+  const processLargeKnowledgeBase = async (
+    allNodes, 
+    spaceId, 
+    storedApiKey, 
+    storedModel, 
+    storedMaxTokens, 
+    storedPrompt, 
+    setStateFunction, 
+    getSpaceName, 
+    handleStreamResponse,
+    docImportOptions = null
+  ) => {
+    const {
+      batchSize = 1, // 每批处理的根节点数量，默认为1
+      maxTotalNodes = 2500 // 触发分批处理的节点数量阈值
+    } = {};
+    
+    // 判断分析类型
+    const isDocImportAnalysis = docImportOptions !== null;
+    const analysisType = isDocImportAnalysis ? '文档导入AI评估' : '知识库AI诊断';
+
+    try {
+      // 计算总节点数
+      const countTotalNodes = (nodes) => {
+        let count = 0;
+        const traverse = (nodeList) => {
+          nodeList.forEach(node => {
+            count++;
+            if (node.children && node.children.length > 0) {
+              traverse(node.children);
+            }
+          });
+        };
+        traverse(nodes);
+        return count;
+      };
+
+      const totalNodes = countTotalNodes(allNodes);
+      console.log(`[分批处理] 总节点数量: ${totalNodes}, 阈值: ${maxTotalNodes}`);
+
+      // 如果节点数量未超过阈值，直接返回完整数据
+      if (totalNodes <= maxTotalNodes) {
+        console.log(`[分批处理] 节点数量未超过阈值，使用完整处理模式`);
+        return {
+          shouldBatch: false,
+          data: allNodes,
+          markdown: formatNodesToMarkdown(allNodes)
+        };
+      }
+      
+      // 节点数量超过阈值，继续执行分批处理逻辑
+      console.log(`[分批处理] 节点数量超过阈值，开始分批处理流程`);
+
+      console.log(`[分批处理] 节点数量超过阈值，启用分批处理模式`);
+      
+      // 识别根节点
+      const rootNodes = identifyRootNodes(allNodes);
+      console.log(`[分批处理] 识别到 ${rootNodes.length} 个根节点`);
+      
+      // 验证根节点识别结果
+      if (rootNodes.length === 0) {
+        console.warn(`[分批处理] 警告：未识别到任何根节点，将使用单次处理模式`);
+        return {
+          shouldBatch: false,
+          data: allNodes,
+          markdown: formatNodesToMarkdown(allNodes)
+        };
+      }
+      
+      // 如果根节点数量为1，也使用单次处理模式
+      if (rootNodes.length === 1) {
+        console.log(`[分批处理] 只有1个根节点，使用单次处理模式`);
+        return {
+          shouldBatch: false,
+          data: allNodes,
+          markdown: formatNodesToMarkdown(allNodes)
+        };
+      }
+
+      // 分批处理根节点
+      const batches = [];
+      for (let i = 0; i < rootNodes.length; i += batchSize) {
+        const batch = rootNodes.slice(i, i + batchSize);
+        batches.push(batch);
+      }
+
+      console.log(`[分批处理] 分为 ${batches.length} 批进行处理，每批 ${batchSize} 个根节点`);
+
+      // 为每批数据构建Markdown
+      const batchData = batches.map((batch, index) => {
+        const batchNodes = [];
+        
+        // 为每个根节点构建其子树
+        batch.forEach(rootNode => {
+          // 查找完整的子树结构 - 直接在allNodes中查找
+          const findSubtreeInNodes = (nodes, targetId) => {
+            // 首先在当前层级查找
+            for (let node of nodes) {
+              if (node.key === targetId || node.node_token === targetId) {
+                return node;
+              }
+            }
+            
+            // 如果没找到，递归在子节点中查找
+            for (let node of nodes) {
+              if (node.children && node.children.length > 0) {
+                const result = findSubtreeInNodes(node.children, targetId);
+                if (result) return result;
+              }
+            }
+            
+            return null;
+          };
+
+          const subtree = findSubtreeInNodes(allNodes, rootNode.key || rootNode.node_token);
+          if (subtree) {
+            console.log(`[分批处理] 找到根节点 ${rootNode.title} 的子树，包含 ${countTotalNodes([subtree])} 个节点`);
+            batchNodes.push(subtree);
+          } else {
+            console.warn(`[分批处理] 未找到根节点 ${rootNode.title} 的子树`);
+            // 如果找不到子树，直接使用根节点
+            batchNodes.push(rootNode);
+          }
+        });
+
+        const batchMarkdown = batchNodes.map(node => formatRootNodeToMarkdown(node, allNodes)).join('\n');
+        
+        return {
+          batchIndex: index,
+          rootNodes: batch,
+          nodes: batchNodes,
+          markdown: batchMarkdown,
+          nodeCount: countTotalNodes(batchNodes)
+        };
+      });
+
+      // 计算总批次数和进度
+      const totalBatches = batchData.length;
+      let completedBatches = 0;
+      const batchResults = [];
+      
+      // 设置分批处理状态
+      setStateFunction(prev => ({
+        ...prev,
+        isBatchProcessing: true,
+        batchProgress: {
+          completed: 0,
+          total: totalBatches,
+          progress: 0,
+          message: '开始分批分析...'
+        },
+        batchResults: [],
+        currentBatchIndex: 0,
+        finalSummary: ''
+      }));
+      
+      console.log(`[分批处理] 开始执行 ${totalBatches} 批分析`);
+      
+      // 获取知识库标题
+      const wikiTitle = await getSpaceName(spaceId);
+      
+      // 逐批执行分析
+      for (let i = 0; i < batchData.length; i++) {
+        const batch = batchData[i];
+        console.log(`[分批处理] 开始处理第 ${i + 1}/${totalBatches} 批，包含 ${batch.rootNodes.length} 个根节点`);
+        
+        // 更新进度状态
+        setStateFunction(prev => ({
+          ...prev,
+          currentBatchIndex: i,
+          batchProgress: {
+            completed: i,
+            total: totalBatches,
+            progress: Math.round((i / totalBatches) * 100),
+            message: `正在分析第 ${i + 1}/${totalBatches} 批（${batch.rootNodes.map(n => n.title).join(', ')}）`
+          }
+        }));
+        
+        try {
+          // 构造当前批次的占位符字典
+          const placeholders = {
+            'KNOWLEDGE_BASE_STRUCTURE': batch.markdown,
+            'WIKI_TITLE': wikiTitle
+          };
+          
+          let config;
+          
+          if (isDocImportAnalysis) {
+            // 文档导入AI评估的配置
+            const { docToken, docType, userAccessToken } = docImportOptions;
+            config = {
+              url: '/api/llm/doc_import_analysis',
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${userAccessToken}`,
+                'Content-Type': 'application/json'
+              },
+              data: {
+                doc_token: docToken,
+                doc_type: docType,
+                wiki_node_md: batch.markdown,
+                api_key: storedApiKey,
+                model: storedModel,
+                max_tokens: parseInt(storedMaxTokens),
+                prompt_template: storedPrompt,
+                placeholders: placeholders,
+                wiki_title: wikiTitle
+              }
+            };
+          } else {
+            // 知识库AI诊断的配置
+            config = {
+              url: '/api/llm/stream_analysis',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              data: {
+                api_key: storedApiKey,
+                model: storedModel,
+                max_tokens: parseInt(storedMaxTokens),
+                prompt_template: storedPrompt,
+                placeholders: placeholders
+              }
+            };
+          }
+          
+          // 执行当前批次的分析
+          let batchResult = '';
+          let batchReasoning = '';
+          
+          await handleStreamResponse(
+            config,
+            (data) => {
+              // 处理纯文本数据块
+              if (data.text) {
+                batchResult += data.text;
+                
+                // 为当前正在进行的批次结果添加根节点标题前缀
+                const currentRootTitles = batch.rootNodes.map(node => node.title).join('、');
+                const currentBatchWithHeader = batchResult ? `## 第${i + 1}批分析结果（根节点：${currentRootTitles}）\n\n${batchResult}` : '';
+                
+                setStateFunction(prev => ({
+                  ...prev,
+                  result: prev.batchResults.join('\n\n---\n\n') + (currentBatchWithHeader ? '\n\n---\n\n' + currentBatchWithHeader : '')
+                }));
+                return;
+              }
+              
+              // 处理区分后的推理内容和普通内容
+              if (data.type === 'reasoning') {
+                batchReasoning += data.content;
+                setStateFunction(prev => ({
+                  ...prev,
+                  reasoningContent: batchReasoning
+                }));
+                return;
+              }
+              
+              if (data.type === 'content') {
+                let content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content);
+                batchResult += content;
+                
+                // 为当前正在进行的批次结果添加根节点标题前缀
+                const currentRootTitles = batch.rootNodes.map(node => node.title).join('、');
+                const currentBatchWithHeader = batchResult ? `## 第${i + 1}批分析结果（根节点：${currentRootTitles}）\n\n${batchResult}` : '';
+                
+                setStateFunction(prev => ({
+                  ...prev,
+                  result: prev.batchResults.join('\n\n---\n\n') + (currentBatchWithHeader ? '\n\n---\n\n' + currentBatchWithHeader : ''),
+                  isReasoningDone: true
+                }));
+                return;
+              }
+            },
+            () => {
+              // 当前批次完成
+              completedBatches++;
+              
+              // 为当前批次结果添加根节点标题前缀，便于区分
+              const rootTitles = batch.rootNodes.map(node => node.title).join('、');
+              const batchResultWithHeader = `## 第${i + 1}批分析结果（根节点：${rootTitles}）\n\n${batchResult}`;
+              batchResults.push(batchResultWithHeader);
+              
+              setStateFunction(prev => ({
+                ...prev,
+                batchResults: [...prev.batchResults, batchResultWithHeader],
+                batchProgress: {
+                  completed: completedBatches,
+                  total: totalBatches,
+                  progress: Math.round((completedBatches / totalBatches) * 100),
+                  message: `已完成 ${completedBatches}/${totalBatches} 批分析`
+                }
+              }));
+              
+              console.log(`[分批处理] 第 ${i + 1} 批分析完成（根节点：${rootTitles}）`);
+            },
+            (error) => {
+              console.error(`[分批处理] 第 ${i + 1} 批分析失败:`, error);
+              throw error;
+            }
+          );
+          
+        } catch (error) {
+          console.error(`[分批处理] 第 ${i + 1} 批分析失败:`, error);
+          setStateFunction(prev => ({
+            ...prev,
+            result: prev.result + `\n\n第 ${i + 1} 批分析失败: ${error.message}`,
+            isLoading: false,
+            isBatchProcessing: false
+          }));
+          throw error;
+        }
+      }
+      
+      // 所有批次分析完成，执行最终总结
+      console.log(`[分批处理] 所有批次分析完成，开始最终总结`);
+      setStateFunction(prev => ({
+        ...prev,
+        batchProgress: {
+          completed: totalBatches,
+          total: totalBatches,
+          progress: 100,
+          message: '正在生成最终总结...'
+        }
+      }));
+      
+      try {
+        // 构造总结分析的提示词，包含根节点信息
+        const summaryPrompt = `你是一位知识管理专家，现在需要对前面分批分析的结果进行总结归纳。
+
+## 分批分析结果
+${batchResults.map((result, index) => {
+  // 从batchData中获取对应批次的根节点信息
+  const batchInfo = batchData[index];
+  const rootTitles = batchInfo ? batchInfo.rootNodes.map(node => node.title).join('、') : '未知根节点';
+  return `### 第${index + 1}批分析结果（根节点：${rootTitles}）\n\n${result}`;
+}).join('\n\n')}
+
+## 总结要求
+请基于以上分批分析结果，提供一个综合性的总结分析，包括：
+1. 整体评估结论
+2. 主要发现的问题（按根节点分类说明）
+3. 综合优化建议（针对不同根节点的专项建议）
+4. 后续改进方向
+
+请使用Markdown格式输出，确保结构清晰、重点突出。在总结中请明确提及各个根节点的分析结果，便于用户对照查看。`;
+        
+        // 构造总结分析的配置
+        const summaryConfig = {
+          url: '/api/llm/stream_analysis',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          data: {
+            api_key: storedApiKey,
+            model: storedModel,
+            max_tokens: parseInt(storedMaxTokens),
+            prompt_template: summaryPrompt,
+            placeholders: {}
+          }
+        };
+        
+        // 执行最终总结分析
+        await handleStreamResponse(
+          summaryConfig,
+          (data) => {
+            if (data.text) {
+                // 为最终总结添加根节点信息标题（只在第一次添加时显示）
+                setStateFunction(prev => {
+                  let updatedFinalSummary = prev.finalSummary;
+                  if (!prev.finalSummary) {
+                    const allRootTitles = batchData.map(batch => 
+                      batch.rootNodes.map(node => node.title).join('、')
+                    ).join('；');
+                    updatedFinalSummary = `## 最终总结（涵盖所有根节点：${allRootTitles}）\n\n`;
+                  }
+                  
+                  return {
+                    ...prev,
+                    finalSummary: updatedFinalSummary + data.text
+                  };
+                });
+                return;
+              }
+            
+            if (data.type === 'reasoning') {
+              setStateFunction(prev => ({
+                ...prev,
+                reasoningContent: prev.reasoningContent + data.content
+              }));
+              return;
+            }
+            
+            if (data.type === 'content') {
+              let content = typeof data.content === 'string' ? data.content : JSON.stringify(data.content);
+              
+              setStateFunction(prev => {
+                // 为最终总结添加根节点信息标题（只在第一次添加时显示）
+                let updatedFinalSummary = prev.finalSummary;
+                if (!prev.finalSummary) {
+                  const allRootTitles = batchData.map(batch => 
+                    batch.rootNodes.map(node => node.title).join('、')
+                  ).join('；');
+                  updatedFinalSummary = `## 最终总结（涵盖所有根节点：${allRootTitles}）\n\n`;
+                }
+                
+                return {
+                  ...prev,
+                  finalSummary: updatedFinalSummary + content,
+                  isReasoningDone: true
+                };
+              });
+              return;
+            }
+          },
+          () => {
+            // 总结分析完成
+            const allRootTitles = batchData.map(batch => 
+              batch.rootNodes.map(node => node.title).join('、')
+            ).join('；');
+            
+            setStateFunction(prev => ({
+              ...prev,
+              isBatchProcessing: false,
+              isLoading: false,
+              hasAnalysis: true,
+              result: prev.batchResults.join('\n\n---\n\n') + '\n\n' + prev.finalSummary
+              }));
+              console.log(`[分批处理] 分批分析流程完成（涵盖根节点：${allRootTitles}）`);
+            },
+            (error) => {
+              console.error(`[分批处理] 最终总结失败:`, error);
+              setStateFunction(prev => ({
+                ...prev,
+                finalSummary: `总结分析失败: ${error.message}`,
+                isBatchProcessing: false,
+                isLoading: false,
+                hasAnalysis: true
+              }));
+            }
+          );
+          
+        } catch (error) {
+          console.error(`[分批处理] 最终总结失败:`, error);
+          setStateFunction(prev => ({
+            ...prev,
+            finalSummary: `总结分析失败: ${error.message}`,
+                isBatchProcessing: false,
+                isLoading: false,
+                hasAnalysis: true
+              }));
+            }
+            
+            // 分批处理成功完成
+            console.log(`[分批处理] 分批处理流程成功完成`);
+            return {
+              success: true,
+              message: '分批处理完成',
+              totalBatches: totalBatches,
+              totalNodes: totalNodes
+            };
+
+    } catch (error) {
+      console.error(`[分批处理] 处理失败:`, error);
+      setStateFunction(prev => ({
+        ...prev,
+        isBatchProcessing: false,
+        isLoading: false,
+        result: `分批处理失败: ${error.message}`
+      }));
+      
+      // 返回错误信息
+      return {
+        success: false,
+        message: `分批处理失败: ${error.message}`,
+        error: error
+      };
+    }
+  };
+
   // 生成基于已展开节点的md格式目录
   const formatExpandedNodesToMarkdown = (treeData, expandedNodes, targetNodeKey) => {
     let markdown = '';
@@ -773,6 +1375,7 @@ const WikiDetail = () => {
   const startWikiAnalysis = async () => {
     const storedApiKey = localStorage.getItem('llm_api_key');
     const storedModel = localStorage.getItem('llm_model') || 'doubao-seed-1-6-thinking-250615';
+    const storedMaxTokens = localStorage.getItem('llm_max_tokens') || '4096';
     const storedPrompt = localStorage.getItem('prompt_wiki_analysis') || `你是一位知识管理专家，擅长检查知识库的结构是否合理。用户希望优化现有的知识库结构，以更好地服务于大模型知识问答。请使用Markdown格式输出评估结果，确保结构清晰、重要信息高亮。
 
 ## 评估材料
@@ -832,6 +1435,45 @@ const WikiDetail = () => {
         source: '知识库AI诊断'
       });
       
+      // 计算总节点数量以判断是否需要分批处理
+      const countTotalNodes = (nodes) => {
+        let count = 0;
+        const traverse = (nodeList) => {
+          nodeList.forEach(node => {
+            count++;
+            if (node.children && node.children.length > 0) {
+              traverse(node.children);
+            }
+          });
+        };
+        traverse(nodes);
+        return count;
+      };
+      
+      const totalNodeCount = countTotalNodes(allNodes);
+      console.log(`[知识库AI诊断] 总节点数量: ${totalNodeCount}`);
+      
+      // 检查是否需要分批处理（超过2500个节点）
+      if (totalNodeCount > 2500) {
+        console.log(`[知识库AI诊断] 节点数量超过阈值，启用分批处理`);
+        // 使用分批处理逻辑
+        await processLargeKnowledgeBase(
+          allNodes,
+          spaceId,
+          storedApiKey,
+          storedModel,
+          storedMaxTokens,
+          storedPrompt,
+          setWikiAnalysisState,
+          getSpaceName,
+          handleStreamResponse
+        );
+        return;
+      }
+      
+      console.log(`[知识库AI诊断] 节点数量未超过阈值，使用单次处理`);
+      
+      // 原有的单次处理逻辑（节点数 <= 2500）
       const wiki_node_md = formatNodesToMarkdown(allNodes);
       // 获取知识库标题
       const wikiTitle = await getSpaceName(spaceId);
@@ -852,6 +1494,7 @@ const WikiDetail = () => {
         data: {
           api_key: storedApiKey,
           model: storedModel,
+          max_tokens: parseInt(storedMaxTokens),
           prompt_template: storedPrompt,
           placeholders: placeholders
         }
@@ -972,6 +1615,7 @@ const WikiDetail = () => {
   const startDocAnalysis = async () => {
     const storedApiKey = localStorage.getItem('llm_api_key');
     const storedModel = localStorage.getItem('llm_model') || 'doubao-seed-1-6-thinking-250615';
+    const storedMaxTokens = localStorage.getItem('llm_max_tokens') || '4096';
     const storedPrompt = localStorage.getItem('prompt_doc_analysis') || `你是一位知识管理大师，负责根据用户提供的当前文档和该文档所在的知识库节点，对文档进行多维度打分评估。请使用Markdown格式输出评估结果，确保结构清晰、重要信息高亮。
 
 ## 评估材料
@@ -1064,6 +1708,7 @@ const WikiDetail = () => {
         data: {
           api_key: storedApiKey,
           model: storedModel,
+          max_tokens: parseInt(storedMaxTokens),
           prompt_template: storedPrompt,
           placeholders: placeholders
         }
@@ -1321,6 +1966,54 @@ const WikiDetail = () => {
     setExpandedNodes(expandedKeys);
   };
 
+  // 自定义展开收起图标组件 - 兼容Ant Design 5.x
+  // 修复showLine和switcherIcon同时使用时图标不变化的问题
+  const CustomSwitcherIcon = (props) => {
+    // Ant Design 5.x会传递expanded属性来判断展开状态
+    const isExpanded = props.expanded || false;
+    // 检查是否为加载状态
+    const isLoading = props.loading || false;
+    
+    if (isLoading) {
+      return (
+        <span 
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '16px',
+            height: '16px',
+            fontSize: '10px',
+            color: 'var(--secondary-text)',
+            animation: 'loadingRotate 1s linear infinite',
+            opacity: 0.6
+          }}
+        >
+          ▶
+        </span>
+      );
+    }
+    
+    return (
+      <span 
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '16px',
+          height: '16px',
+          fontSize: '10px',
+          color: 'var(--secondary-text)',
+          transition: 'transform 0.3s ease',
+          transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+          cursor: 'pointer'
+        }}
+      >
+        ▶
+      </span>
+    );
+  };
+
   const memoizedTree = useMemo(() => {
     if (loading) {
       return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><Spin /></div>;
@@ -1333,15 +2026,27 @@ const WikiDetail = () => {
         onExpand={onExpand}
         expandedKeys={expandedNodes}
         showLine
+        switcherIcon={(props) => <CustomSwitcherIcon {...props} />}
       />
     );
   }, [treeData, loading, onSelect, onLoadData, expandedNodes]);
 
   return (
-    <Layout className="wiki-detail-layout">
-      <Header className="wiki-detail-header">
+    <div className="wiki-detail-layout">
+      <header className="wiki-detail-header">
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <ArrowLeftOutlined onClick={() => navigate('/')} style={{ marginRight: '16px', cursor: 'pointer', fontSize: '16px' }} />
+          <svg 
+            onClick={() => navigate('/')} 
+            style={{ marginRight: '16px', cursor: 'pointer', fontSize: '24px', width: '24px', height: '24px' }} 
+            t="1755250267148" 
+            class="icon" 
+            viewBox="0 0 1024 1024" 
+            version="1.1" 
+            xmlns="http://www.w3.org/2000/svg" 
+            p-id="3134"
+          >
+            <path d="M475.591 300.373V175.218c-11.378-52.338-54.613-20.48-54.613-20.48L120.604 411.876c-65.99 45.51-4.55 79.644-4.55 79.644l295.822 254.862c59.164 43.236 63.715-22.755 63.715-22.755V607.573c300.373-93.297 423.253 279.894 423.253 279.894 11.378 20.48 18.205 0 18.205 0C1033.102 327.68 475.59 300.373 475.59 300.373z" p-id="3135"></path>
+          </svg>
           <Title level={3} className="wiki-detail-title">{spaceName}</Title>
         </div>
         <div>
@@ -1353,9 +2058,9 @@ const WikiDetail = () => {
             </Button>
           )}
         </div>
-      </Header>
-      <Layout>
-        <Sider width={350} className="wiki-detail-sider">
+      </header>
+      <div className="wiki-detail-main-content">
+        <aside className="wiki-detail-sider">
           <div style={{ padding: '10px' }}>
             <Button 
               onClick={handleExportButtonClick} 
@@ -1382,22 +2087,33 @@ const WikiDetail = () => {
             )}
           </div>
           {memoizedTree}
-        </Sider>
-        <Content className="wiki-detail-content">
+        </aside>
+        <main className="wiki-detail-content">
           {selectedNode ? (
-            <iframe
-              src={selectedNode.url}
-              title={typeof selectedNode.title === 'string' ? selectedNode.title : 'Wiki Content'}
-              className="wiki-iframe"
-              style={{ width: '100%', height: '100%', border: 'none' }}
-            />
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+              <iframe
+                src={selectedNode.url}
+                title={typeof selectedNode.title === 'string' ? selectedNode.title : 'Wiki Content'}
+                className="wiki-iframe"
+                style={{ width: '100%', height: '100%', border: 'none' }}
+              />
+            </div>
           ) : (
-            <div style={{ textAlign: 'center', color: 'var(--feishu-text-color-3)', paddingTop: '40px' }}>
+            <div style={{ 
+              textAlign: 'center', 
+              color: 'var(--feishu-text-color-3)', 
+              paddingTop: '40px',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
               <p>请在左侧选择一个知识节点以查看详情</p>
             </div>
           )}
-        </Content>
-      </Layout>
+        </main>
+      </div>
       <AiAnalysisModal
         visible={modalVisible}
         onClose={() => {
@@ -1486,7 +2202,7 @@ const WikiDetail = () => {
           // 注意：文档导入分析需要用户重新选择文档，所以这里只是重置状态
         }}
       />
-    </Layout>
+    </div>
   );
 };
 
