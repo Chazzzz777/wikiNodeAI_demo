@@ -64,7 +64,7 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
           <div style={{ marginTop: '20px' }}>
             <div>正在获取全量导航数据</div>
             {fullNavigationNodeCount > 0 && (
-              <div style={{ marginTop: '10px', color: '#666' }}>
+              <div style={{ marginTop: '10px', color: 'rgba(255, 255, 255, 0.65)' }}>
                 已获取节点数量: {fullNavigationNodeCount}
               </div>
             )}
@@ -81,23 +81,23 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
           <div style={{ marginTop: '20px' }}>
             <div>正在分批分析超大型知识库</div>
             {batchProgress > 0 && (
-              <div style={{ marginTop: '10px', color: '#666' }}>
+              <div style={{ marginTop: '10px', color: 'rgba(255, 255, 255, 0.65)' }}>
                 处理进度: {batchProgress}%
               </div>
             )}
             {currentBatchIndex > 0 && (
-              <div style={{ marginTop: '10px', color: '#666' }}>
+              <div style={{ marginTop: '10px', color: 'rgba(255, 255, 255, 0.65)' }}>
                 当前批次: {currentBatchIndex}
               </div>
             )}
           </div>
           {batchResults && batchResults.length > 0 && (
             <div style={{ marginTop: '20px', textAlign: 'left' }}>
-              <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>已完成批次分析结果:</div>
+              <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#e8e6e3' }}>已完成批次分析结果:</div>
               <div style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '10px' }}>
                 {batchResults.map((result, index) => (
-                  <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #d9d9d9', borderRadius: '4px' }}>
-                    <div style={{ fontWeight: 'bold' }}>批次 {index + 1}:</div>
+                  <div key={index} className="batch-result-card" style={{ marginBottom: '10px', padding: '10px', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '4px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#e8e6e3' }}>批次 {index + 1}:</div>
                     <div style={{ marginTop: '5px' }}>
                       <ReactMarkdown>{result}</ReactMarkdown>
                     </div>
@@ -137,7 +137,7 @@ const DocImportAnalysisModal = ({ visible, onClose, onAnalysis, loading, analysi
         )}
         {finalSummary && (
           <div className="analysis-result" style={{ marginBottom: '20px' }}>
-            <div style={{ fontWeight: 'bold', marginBottom: '10px' }}>最终总结分析:</div>
+            <div style={{ fontWeight: 'bold', marginBottom: '10px', color: '#e8e6e3' }}>最终总结分析:</div>
             <ReactMarkdown>{finalSummary}</ReactMarkdown>
           </div>
         )}

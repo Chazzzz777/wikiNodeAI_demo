@@ -18,15 +18,20 @@ const GlobalStyle = createGlobalStyle`
 
     &::before {
       content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: radial-gradient(circle at center, rgba(66, 71, 85, 0.5) 0%, rgba(66, 71, 85, 0) 40%),
                   radial-gradient(circle at 20% 20%, rgba(120, 80, 180, 0.4) 0%, rgba(120, 80, 180, 0) 30%),
                   radial-gradient(circle at 80% 70%, rgba(70, 150, 150, 0.4) 0%, rgba(70, 150, 150, 0) 30%);
       z-index: -1;
+      /* 确保背景全屏拉伸，不随内容滚动 */
+      background-attachment: fixed;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
   }
 

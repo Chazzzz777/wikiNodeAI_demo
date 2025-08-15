@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../utils/api';
 import llmApiClient, { handleStreamResponse } from '../utils/llmApiClient';
 import { Tree, Spin, Typography, Button, message } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+// import { ArrowLeftOutlined } from '@ant-design/icons'; // 替换为自定义SVG图标
 import { flushSync } from 'react-dom';
 import AiAnalysisModal from '../components/AiAnalysisModal';
 import DocAnalysisModal from '../components/DocAnalysisModal';
@@ -1966,6 +1966,54 @@ ${batchResults.map((result, index) => {
     setExpandedNodes(expandedKeys);
   };
 
+  // 自定义展开收起图标组件 - 兼容Ant Design 5.x
+  // 修复showLine和switcherIcon同时使用时图标不变化的问题
+  const CustomSwitcherIcon = (props) => {
+    // Ant Design 5.x会传递expanded属性来判断展开状态
+    const isExpanded = props.expanded || false;
+    // 检查是否为加载状态
+    const isLoading = props.loading || false;
+    
+    if (isLoading) {
+      return (
+        <span 
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '16px',
+            height: '16px',
+            fontSize: '10px',
+            color: 'var(--secondary-text)',
+            animation: 'loadingRotate 1s linear infinite',
+            opacity: 0.6
+          }}
+        >
+          ▶
+        </span>
+      );
+    }
+    
+    return (
+      <span 
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '16px',
+          height: '16px',
+          fontSize: '10px',
+          color: 'var(--secondary-text)',
+          transition: 'transform 0.3s ease',
+          transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+          cursor: 'pointer'
+        }}
+      >
+        ▶
+      </span>
+    );
+  };
+
   const memoizedTree = useMemo(() => {
     if (loading) {
       return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}><Spin /></div>;
@@ -1978,6 +2026,7 @@ ${batchResults.map((result, index) => {
         onExpand={onExpand}
         expandedKeys={expandedNodes}
         showLine
+        switcherIcon={(props) => <CustomSwitcherIcon {...props} />}
       />
     );
   }, [treeData, loading, onSelect, onLoadData, expandedNodes]);
@@ -1986,7 +2035,18 @@ ${batchResults.map((result, index) => {
     <div className="wiki-detail-layout">
       <header className="wiki-detail-header">
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <ArrowLeftOutlined onClick={() => navigate('/')} style={{ marginRight: '16px', cursor: 'pointer', fontSize: '16px' }} />
+          <svg 
+            onClick={() => navigate('/')} 
+            style={{ marginRight: '16px', cursor: 'pointer', fontSize: '24px', width: '24px', height: '24px' }} 
+            t="1755250267148" 
+            class="icon" 
+            viewBox="0 0 1024 1024" 
+            version="1.1" 
+            xmlns="http://www.w3.org/2000/svg" 
+            p-id="3134"
+          >
+            <path d="M475.591 300.373V175.218c-11.378-52.338-54.613-20.48-54.613-20.48L120.604 411.876c-65.99 45.51-4.55 79.644-4.55 79.644l295.822 254.862c59.164 43.236 63.715-22.755 63.715-22.755V607.573c300.373-93.297 423.253 279.894 423.253 279.894 11.378 20.48 18.205 0 18.205 0C1033.102 327.68 475.59 300.373 475.59 300.373z" p-id="3135"></path>
+          </svg>
           <Title level={3} className="wiki-detail-title">{spaceName}</Title>
         </div>
         <div>

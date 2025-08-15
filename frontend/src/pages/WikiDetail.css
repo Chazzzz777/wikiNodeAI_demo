@@ -42,8 +42,9 @@
   
   /* 渐变 - 优化文字可读性 */
   --text-gradient: linear-gradient(135deg, #f8fafc, #e2e8f0);
-  --bg-gradient: radial-gradient(ellipse at top, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-                  radial-gradient(ellipse at bottom, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+  --bg-gradient: radial-gradient(circle at center, rgba(66, 71, 85, 0.5) 0%, rgba(66, 71, 85, 0) 40%),
+                  radial-gradient(circle at 20% 20%, rgba(120, 80, 180, 0.4) 0%, rgba(120, 80, 180, 0) 30%),
+                  radial-gradient(circle at 80% 70%, rgba(70, 150, 150, 0.4) 0%, rgba(70, 150, 150, 0) 30%);
 }
 
 /* 主要布局样式 - 全屏布局，移除容器限制 */
@@ -120,6 +121,11 @@
   width: 100%;
   position: relative;
   overflow: hidden;
+  
+  /* 确保容器背景完全透明 */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .wiki-detail-header {
@@ -140,6 +146,21 @@
   
   /* 重置默认样式 */
   box-sizing: border-box;
+  
+  /* 确保容器背景完全透明 */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  
+  /* 确保左侧容器（返回按钮和标题）完美垂直居中对齐 */
+  align-items: center;
+}
+
+/* 左侧容器（返回按钮和标题）样式 */
+.wiki-detail-header > div:first-child {
+  display: flex;
+  align-items: center;
+  /* 确保垂直居中对齐 */
+  align-items: center;
 }
 
 .wiki-detail-title {
@@ -152,6 +173,10 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* 确保标题与返回按钮垂直居中对齐 */
+  line-height: 1;
+  vertical-align: middle;
+  display: inline-block;
 }
 
 .wiki-detail-sider {
@@ -178,6 +203,10 @@
   /* 重置默认样式 */
   box-sizing: border-box;
   margin: 0;
+  
+  /* 确保容器背景完全透明 */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .wiki-detail-content {
@@ -204,6 +233,10 @@
   /* 重置默认样式 */
   box-sizing: border-box;
   margin: 0;
+  
+  /* 确保容器背景完全透明 */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* 节点信息卡片 - 增强健壮性 */
@@ -348,6 +381,295 @@
   50% { background-position: 100% 100%; }
 }
 
+/* 优化展开收起按钮样式 - 使用箭头图标（修复版） */
+/* 基础样式重置 */
+.wiki-detail-layout .ant-tree,
+.wiki-detail-sider .ant-tree {
+  box-sizing: border-box !important;
+}
+
+/* 展开收起按钮容器样式 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher,
+.wiki-detail-sider .ant-tree .ant-tree-switcher {
+  color: var(--secondary-text) !important;
+  transition: all var(--transition-normal) !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 4px !important;
+  position: relative !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  /* 确保按钮可见 */
+  font-size: 12px !important;
+  line-height: 1 !important;
+}
+
+/* 悬停状态 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher:hover,
+.wiki-detail-sider .ant-tree .ant-tree-switcher:hover,
+.wiki-detail-layout .ant-tree .ant-tree-switcher:hover .ant-tree-switcher-icon,
+.wiki-detail-sider .ant-tree .ant-tree-switcher:hover .ant-tree-switcher-icon {
+  color: var(--primary-text) !important;
+  background: rgba(139, 92, 246, 0.1) !important;
+}
+
+/* 展开状态箭头样式 */
+/* 移除对自定义switcherIcon的干扰 */
+/*
+.wiki-detail-layout .ant-tree .ant-tree-switcher.ant-tree-switcher_open .ant-tree-switcher-icon,
+.wiki-detail-sider .ant-tree .ant-tree-switcher.ant-tree-switcher_open .ant-tree-switcher-icon,
+.wiki-detail-layout .ant-tree .ant-tree-switcher_open .ant-select-tree-switcher-icon,
+.wiki-detail-sider .ant-tree .ant-tree-switcher_open .ant-select-tree-switcher-icon {
+  transform: rotate(90deg) !important;
+}
+*/
+
+/* 收起状态箭头样式 */
+/* 移除对自定义switcherIcon的干扰 */
+/*
+.wiki-detail-layout .ant-tree .ant-tree-switcher.ant-tree-switcher_close .ant-tree-switcher-icon,
+.wiki-detail-sider .ant-tree .ant-tree-switcher.ant-tree-switcher_close .ant-tree-switcher-icon,
+.wiki-detail-layout .ant-tree .ant-tree-switcher_close .ant-select-tree-switcher-icon,
+.wiki-detail-sider .ant-tree .ant-tree-switcher_close .ant-select-tree-switcher-icon {
+  transform: rotate(0deg) !important;
+}
+*/
+
+/* 箭头图标样式 - 修复版 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher-icon,
+.wiki-detail-sider .ant-tree .ant-tree-switcher-icon {
+  display: inline-block !important;
+  transition: transform var(--transition-normal) !important;
+  font-size: 0 !important;
+  color: inherit !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  position: relative !important;
+}
+
+/* 使用伪元素显示箭头 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher-icon::before,
+.wiki-detail-sider .ant-tree .ant-tree-switcher-icon::before {
+  content: '▶' !important;
+  font-size: 10px !important;
+  color: inherit !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  display: block !important;
+}
+
+/* 使用Ant Design 5.x的switcherIcon方式，不再需要隐藏默认图标的CSS hack */
+
+/* 自定义展开收起图标的悬停效果 - 只为有子节点的switcher添加 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher:not(.ant-tree-switcher-noop):hover,
+.wiki-detail-sider .ant-tree .ant-tree-switcher:not(.ant-tree-switcher-noop):hover {
+  background: rgba(139, 92, 246, 0.1) !important;
+  border-radius: 50% !important; /* 改为圆形避免矩形 */
+  width: 20px !important;
+  height: 20px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.wiki-detail-layout .ant-tree .ant-tree-switcher:not(.ant-tree-switcher-noop):hover span,
+.wiki-detail-sider .ant-tree .ant-tree-switcher:not(.ant-tree-switcher-noop):hover span {
+  color: var(--primary-text) !important;
+}
+
+/* 隐藏叶子节点的switcher，避免hover效果 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher-noop,
+.wiki-detail-sider .ant-tree .ant-tree-switcher-noop {
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 加载状态样式 - 为节点加载添加视觉反馈 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher.loading,
+.wiki-detail-sider .ant-tree .ant-tree-switcher.loading {
+  opacity: 0.6 !important;
+  pointer-events: none !important;
+  animation: loadingPulse 1.4s infinite !important;
+}
+
+.wiki-detail-layout .ant-tree .ant-tree-switcher.loading .ant-tree-switcher-icon::before,
+.wiki-detail-sider .ant-tree .ant-tree-switcher.loading .ant-tree-switcher-icon::before {
+  content: '▶' !important;
+  animation: loadingRotate 1s linear infinite !important;
+}
+
+@keyframes loadingPulse {
+  0%, 100% { opacity: 0.6 !important; }
+  50% { opacity: 1 !important; }
+}
+
+@keyframes loadingRotate {
+  0% { transform: translate(-50%, -50%) rotate(0deg) !important; }
+  100% { transform: translate(-50%, -50%) rotate(360deg) !important; }
+}
+
+/* 优化树形组件的层级连接线样式 - 调暗白色线条（增强版） */
+/* 基础连接线样式 */
+.wiki-detail-layout .ant-tree .ant-tree-indent-unit,
+.wiki-detail-sider .ant-tree .ant-tree-indent-unit {
+  width: 24px !important;
+  height: 100% !important;
+  position: relative !important;
+  flex-shrink: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* 覆盖Ant Design 5.x showLine模式的默认连接线样式 */
+.wiki-detail-layout .ant-tree-show-line .ant-tree-indent-unit::before,
+.wiki-detail-sider .ant-tree-show-line .ant-tree-indent-unit::before,
+.wiki-detail-layout .ant-tree-show-line .ant-tree-indent-unit::after,
+.wiki-detail-sider .ant-tree-show-line .ant-tree-indent-unit::after {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 覆盖所有可能的Ant Design 5.x连接线选择器 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher-line,
+.wiki-detail-sider .ant-tree .ant-tree-switcher-line,
+.wiki-detail-layout .ant-tree .ant-tree-switcher-line::before,
+.wiki-detail-sider .ant-tree .ant-tree-switcher-line::before,
+.wiki-detail-layout .ant-tree .ant-tree-switcher-line::after,
+.wiki-detail-sider .ant-tree .ant-tree-switcher-line::after {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 精确覆盖Ant Design 5.x的连接线样式，避免影响其他元素 */
+.wiki-detail-layout .ant-tree .ant-tree-indent-unit[class*="-line"],
+.wiki-detail-sider .ant-tree .ant-tree-indent-unit[class*="-line"],
+.wiki-detail-layout .ant-tree .ant-tree-indent-unit[class*="-line"]::before,
+.wiki-detail-sider .ant-tree .ant-tree-indent-unit[class*="-line"]::before,
+.wiki-detail-layout .ant-tree .ant-tree-indent-unit[class*="-line"]::after,
+.wiki-detail-sider .ant-tree .ant-tree-indent-unit[class*="-line"]::after {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-width: 1px !important;
+}
+
+/* 移除过于宽泛的选择器，避免影响其他UI元素 */
+
+/* 垂直连接线 */
+.wiki-detail-layout .ant-tree .ant-tree-indent-unit::before,
+.wiki-detail-sider .ant-tree .ant-tree-indent-unit::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 50% !important;
+  width: 1px !important;
+  background: rgba(255, 255, 255, 0.08) !important; /* 调暗的白色线条 */
+  transform: translateX(-50%) !important;
+  transition: opacity var(--transition-normal) !important;
+  opacity: 1 !important;
+}
+
+/* 结束节点连接线 */
+.wiki-detail-layout .ant-tree .ant-tree-indent-unit-end::before,
+.wiki-detail-sider .ant-tree .ant-tree-indent-unit-end::before {
+  background: rgba(255, 255, 255, 0.08) !important; /* 调暗的白色线条 */
+}
+
+/* 叶子节点最后连接线 */
+.wiki-detail-layout .ant-tree .ant-tree-treenode-leaf-last .ant-tree-indent-unit::before,
+.wiki-detail-sider .ant-tree .ant-tree-treenode-leaf-last .ant-tree-indent-unit::before {
+  height: 50% !important;
+  top: 0 !important;
+}
+
+/* 第一个节点连接线 */
+.wiki-detail-layout .ant-tree .ant-tree-treenode:first-child .ant-tree-indent-unit::before,
+.wiki-detail-sider .ant-tree .ant-tree-treenode:first-child .ant-tree-indent-unit::before {
+  top: 50% !important;
+  height: 50% !important;
+}
+
+/* 水平连接线 - 连接到父节点 */
+.wiki-detail-layout .ant-tree .ant-tree-treenode:not(:first-child) .ant-tree-indent-unit::after,
+.wiki-detail-sider .ant-tree .ant-tree-treenode:not(:first-child) .ant-tree-indent-unit::after {
+  content: '' !important;
+  position: absolute !important;
+  top: -50% !important;
+  left: 50% !important;
+  width: 1px !important;
+  height: 50% !important;
+  background: rgba(255, 255, 255, 0.08) !important; /* 调暗的白色线条 */
+  transform: translateX(-50%) !important;
+  transition: opacity var(--transition-normal) !important;
+  opacity: 1 !important;
+}
+
+/* 节点展开动画 - 平滑过渡效果 */
+.wiki-detail-layout .ant-tree .ant-tree-treenode,
+.wiki-detail-sider .ant-tree .ant-tree-treenode {
+  transition: all var(--transition-normal) ease !important;
+  transform-origin: top center !important;
+}
+
+/* 节点内容展开动画 */
+.wiki-detail-layout .ant-tree .ant-tree-node-content-wrapper,
+.wiki-detail-sider .ant-tree .ant-tree-node-content-wrapper {
+  transition: all var(--transition-normal) ease !important;
+  transform-origin: left center !important;
+}
+
+/* 子节点容器动画 */
+.wiki-detail-layout .ant-tree .ant-tree-treenode-children,
+.wiki-detail-sider .ant-tree .ant-tree-treenode-children {
+  transition: all var(--transition-normal) ease !important;
+  transform-origin: top center !important;
+  overflow: hidden !important;
+}
+
+/* 加载状态下的连接线样式 */
+.wiki-detail-layout .ant-tree .ant-tree-switcher.loading ~ .ant-tree-node-content-wrapper,
+.wiki-detail-sider .ant-tree .ant-tree-switcher.loading ~ .ant-tree-node-content-wrapper {
+  opacity: 0.7 !important;
+}
+
+/* 新加载节点的渐入动画 */
+.wiki-detail-layout .ant-tree .ant-tree-treenode[data-newly-loaded="true"],
+.wiki-detail-sider .ant-tree .ant-tree-treenode[data-newly-loaded="true"] {
+  animation: nodeFadeIn 0.5s ease-out !important;
+}
+
+@keyframes nodeFadeIn {
+  from {
+    opacity: 0 !important;
+    transform: translateY(-10px) !important;
+  }
+  to {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+}
+
+/* 展开状态下的连接线高亮 */
+.wiki-detail-layout .ant-tree .ant-tree-treenode-expanded .ant-tree-indent-unit::before,
+.wiki-detail-sider .ant-tree .ant-tree-treenode-expanded .ant-tree-indent-unit::before,
+.wiki-detail-layout .ant-tree .ant-tree-treenode-expanded .ant-tree-indent-unit::after,
+.wiki-detail-sider .ant-tree .ant-tree-treenode-expanded .ant-tree-indent-unit::after {
+  background: rgba(139, 92, 246, 0.15) !important;
+  opacity: 1 !important;
+}
+
 .ant-tree .ant-tree-node-content-wrapper {
   border-radius: var(--radius-sm);
   padding: var(--spacing-xs) var(--spacing-sm);
@@ -414,14 +736,7 @@
   height: 100%;
 }
 
-.ant-tree .ant-tree-switcher {
-  color: var(--secondary-text);
-  transition: color var(--transition-normal);
-}
-
-.ant-tree .ant-tree-switcher:hover {
-  color: var(--primary-text);
-}
+/* 旧的展开收起按钮样式已被新的箭头样式替代 */
 
 .ant-tree .ant-tree-treenode {
   padding: var(--spacing-xs) 0;
@@ -462,14 +777,38 @@
   left: 0;
   right: 0;
   bottom: 0;
+  
+  /* 确保iframe背景完全透明 */
+  background-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* 按钮样式 - 与首页AI分析配置按钮保持严格一致 */
+/* 返回按钮样式 - 确保与标题垂直居中对齐 */
+.wiki-detail-header .ant-btn .anticon,
+.wiki-detail-header .anticon,
+.wiki-detail-header svg {
+  vertical-align: middle;
+  line-height: 1;
+  display: inline-block;
+  /* 确保SVG图标颜色与文字一致 */
+  fill: currentColor;
+  color: var(--primary-text);
+  /* 添加悬停效果 */
+  transition: color var(--transition-normal) ease;
+}
+
+.wiki-detail-header svg:hover {
+  color: var(--accent-color);
+  fill: var(--accent-color);
+}
+
+/* 按钮样式 - 与首页ai分析配置按钮保持严格一致 */
 .wiki-detail-header .ant-btn,
 .wiki-detail-sider .ant-btn,
 .wiki-detail-header .ant-btn-primary,
 .wiki-detail-sider .ant-btn-primary {
-  background: rgba(255, 255, 255, 0.1) !important; /* 默认态背景：与首页AI分析配置按钮同款 */
+  background: rgba(255, 255, 255, 0.1) !important; /* 默认态背景：与首页ai分析配置按钮同款 */
   border: none !important; /* 移除边框 */
   color: #ffffff !important;
   font-weight: 500;

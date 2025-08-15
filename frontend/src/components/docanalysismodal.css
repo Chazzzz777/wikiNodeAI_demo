@@ -1,13 +1,17 @@
 .doc-analysis-modal .ant-modal-body {
   max-height: 70vh;
   overflow-y: auto;
+  background-color: #121212;
+  color: #e8e6e3;
 }
 
 .analysis-section {
   margin-bottom: 20px;
   padding: 15px;
-  border: 1px solid #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
+  background-color: #2a2d31;
+  color: #e8e6e3;
 }
 
 .section-title {
@@ -17,15 +21,18 @@
 .analysis-result {
   padding: 24px;
   border-radius: 8px;
-  background-color: #FAFAFA;
-  border: 1px solid #F0F0F0;
+  background-color: #2a2d31;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e6e3;
 }
 
 .reasoning-only {
-  background-color: #f5f5f5;
+  background-color: #2a2d31;
   padding: 20px;
   border-radius: 8px;
   margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e6e3;
 }
 
 .reasoning-content {
@@ -33,11 +40,12 @@
   word-wrap: break-word;
   max-height: 400px;
   overflow-y: auto;
+  color: #e8e6e3;
 }
 
 .analysis-result h3 {
-  color: #1890ff;
-  border-bottom: 2px solid #e8e8e8;
+  color: #e8e6e3;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 8px;
   margin-top: 20px;
   margin-bottom: 15px;
@@ -46,11 +54,13 @@
 .analysis-result p {
   line-height: 1.6;
   margin-bottom: 10px;
+  color: #e8e6e3;
 }
 
 .analysis-result ul {
   margin-left: 20px;
   margin-bottom: 15px;
+  color: #e8e6e3;
 }
 
 /* 可复用的渐变紫色按钮样式 */
@@ -61,10 +71,139 @@
   --gradient-purple-hover-end: #722ed1;
 }
 
+/* 模态窗整体样式 */
+.doc-analysis-modal .ant-modal {
+  background-color: #121212;
+}
+
+.doc-analysis-modal .ant-modal-content {
+  background-color: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e6e3;
+}
+
+.doc-analysis-modal .ant-modal-header {
+  background-color: #121212;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.doc-analysis-modal .ant-modal-title {
+  color: #e8e6e3;
+  font-weight: 500;
+}
+
+.doc-analysis-modal .ant-modal-close {
+  color: #e8e6e3;
+}
+
+.doc-analysis-modal .ant-modal-close-x {
+  color: #e8e6e3;
+}
+
+/* 输入框样式适配暗色主题 */
+.doc-analysis-modal .ant-input {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e6e3;
+  border-radius: 8px;
+}
+
+.doc-analysis-modal .ant-input:focus,
+.doc-analysis-modal .ant-input-focused {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+}
+
+.doc-analysis-modal .ant-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* 折叠面板样式适配 */
+.doc-analysis-modal .ant-collapse {
+  background-color: transparent;
+  border: none;
+}
+
+.doc-analysis-modal .ant-collapse-item {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #2a2d31;
+  margin-bottom: 8px;
+}
+
+.doc-analysis-modal .ant-collapse-header {
+  background-color: #2a2d31;
+  color: rgba(255, 255, 255, 0.45) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 更具体的选择器确保折叠面板标题颜色生效 */
+.doc-analysis-modal .ant-collapse .ant-collapse-item .ant-collapse-header {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+/* 确保折叠面板标题中的span元素也应用灰色 */
+.doc-analysis-modal .ant-collapse-header span {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.doc-analysis-modal .ant-collapse-content {
+  background-color: #2a2d31;
+  color: #e8e6e3;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Markdown 内容样式适配 */
+.analysis-result h1,
+.analysis-result h2,
+.analysis-result h3,
+.analysis-result h4,
+.analysis-result h5,
+.analysis-result h6 {
+  color: #e8e6e3;
+}
+
+.analysis-result code {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #69b1ff;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.analysis-result pre {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.analysis-result pre code {
+  background-color: transparent;
+  color: #e8e6e3;
+  padding: 0;
+}
+
+/* 加载状态文字颜色 */
+.doc-analysis-modal .ant-typography {
+  color: #e8e6e3;
+}
+
+.doc-analysis-modal .ant-typography-secondary {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* 分批处理结果卡片样式 */
+.batch-result-card {
+  background-color: #2a2d31;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e8e6e3;
+}
+
 .doc-analysis-modal .ant-modal-footer {
   text-align: center;
   padding: 16px 24px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #121212;
 }
 
 .doc-analysis-modal .gradient-purple-btn {
@@ -93,9 +232,9 @@
 }
 
 .doc-analysis-modal .gradient-purple-btn:disabled {
-  background: #f5f5f5;
-  color: rgba(0, 0, 0, 0.25);
-  border: 1px solid #d9d9d9;
+  background: #434343;
+  color: rgba(255, 255, 255, 0.25);
+  border: 1px solid #5a5a5a;
   box-shadow: none;
   transform: none;
 }

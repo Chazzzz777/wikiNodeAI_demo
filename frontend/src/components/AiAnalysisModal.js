@@ -66,20 +66,20 @@ const AiAnalysisModal = ({ visible, onClose, analysisResult, reasoningContent, i
             )}
           </div>
           {batchResults && batchResults.length > 0 && (
-            <div style={{ marginTop: '20px', textAlign: 'left' }}>
-              <Text strong>已完成批次分析结果:</Text>
-              <div style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '10px' }}>
-                {batchResults.map((result, index) => (
-                  <div key={index} style={{ marginBottom: '10px', padding: '10px', border: '1px solid #d9d9d9', borderRadius: '4px' }}>
-                    <Text strong>批次 {index + 1}:</Text>
-                    <div style={{ marginTop: '5px' }}>
-                      <ReactMarkdown>{result}</ReactMarkdown>
+              <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                <Text strong>已完成批次分析结果:</Text>
+                <div style={{ maxHeight: '200px', overflowY: 'auto', marginTop: '10px' }}>
+                  {batchResults.map((result, index) => (
+                    <div key={index} className="batch-result-card" style={{ marginBottom: '10px', padding: '10px', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '4px' }}>
+                      <Text strong>批次 {index + 1}:</Text>
+                      <div style={{ marginTop: '5px' }}>
+                        <ReactMarkdown>{result}</ReactMarkdown>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       );
     }
